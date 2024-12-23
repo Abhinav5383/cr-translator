@@ -1,5 +1,9 @@
 import JSON5 from "json5";
-import { decodeBase64 } from "./utils";
+
+let RAW_GITHUB_URL = "https://raw.githubusercontent.com";
+if (import.meta.env.DEV === true) {
+    RAW_GITHUB_URL = "";
+}
 
 const GITHUB_API_URL = "https://api.github.com";
 const REPO_PATH = "FinalForEach/Cosmic-Reach-Localization";
@@ -56,13 +60,7 @@ export async function getFilesPerLocale(path = `${LANG_DIR}/en_us`) {
 }
 
 export async function getLocaleFileContents(path: string) {
-    const json = await githubFetch<Record<string, string>>(`${GITHUB_API_URL}/repos/${REPO_PATH}/contents/${path}`);
-    let content = json.content || "";
-    if (content.endsWith("\\n")) {
-        content = content.slice(0, -2);
-    }
-
-    return jsonParse(decodeBase64(content)) as Record<string, any>;
+    return await githubFetch<Record<string, string>>(`${RAW_GITHUB_URL}/${REPO_PATH}/master/${path}`);
 }
 
 export function getAbsoluteDirUrl(dir: Dir) {
@@ -88,18 +86,16 @@ async function githubFetch<T>(url: RequestInfo | URL, options?: RequestInit): Pr
     if (cachedResponse) return cachedResponse as T;
 
     try {
-        const res = await fetch(url, {
-            // headers: {
-            //     Authorization: "token TOKEN",
-            // },
-            ...options,
-        });
+        const res = await fetch(url, options);
         const json = (await res.json()) as T;
         CACHE.set(url.toString(), json);
 
         return json;
     } catch (error) {
         CACHE.delete(url.toString());
+
+        console.error(error);
+        console.error(url);
 
         return Response.json({}) as T;
     }
