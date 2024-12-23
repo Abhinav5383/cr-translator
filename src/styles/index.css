@@ -1,0 +1,134 @@
+@import "./theme.css";
+@import "./nav.css";
+
+:root {
+    --foreground: #E4E6EA;
+    --foreground-muted: #D0D2D8;
+    --foreground-extra-muted: #6C6F75;
+
+    --background: #16181C;
+    --background-raised: #24262A;
+    --background-raised-a-lot: #34363A;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+    color-scheme: dark;
+}
+
+#app {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+}
+
+.loading {
+    display: grid;
+    place-items: center;
+    padding: 5rem 2rem;
+    grid-column: 1 / -1;
+    font-size: 2rem;
+}
+
+main {
+    padding: 1.5rem 4rem;
+}
+
+.content {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 1rem;
+}
+
+.selectors {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    border-bottom: 1px solid var(--background-raised-a-lot);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.select-box {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.select-box label {
+    font-size: 1.17rem;
+}
+
+.select-box select {
+    min-width: 6rem;
+    font-family: monospace;
+}
+
+
+@media screen and (min-width: 67rem) {
+    .selectors select {
+        min-width: 15rem;
+    }
+}
+
+.inputs-container {
+    min-height: 80vh;
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    place-content: start;
+    font-family: monospace;
+    gap: 0.75rem;
+}
+
+.input-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+}
+
+.input-row label {
+    font-size: 1rem;
+    color: var(--foreground-muted);
+    padding-right: 2rem;
+}
+
+.tree-indicator {
+    font-size: 1rem;
+}
+
+.translation-input {
+    color: var(--foreground);
+}
+
+.result {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: 1rem;
+    margin-top: 3rem;
+}
+
+.result textarea {
+    min-height: 32rem;
+    height: fit-content;
+    font-family: monospace;
+    font-size: 1rem;
+    resize: none;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
