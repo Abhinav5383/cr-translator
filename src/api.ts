@@ -1,5 +1,3 @@
-import JSON5 from "json5";
-
 let RAW_GITHUB_URL = "https://raw.githubusercontent.com";
 if (import.meta.env.DEV === true) {
     RAW_GITHUB_URL = "";
@@ -98,15 +96,5 @@ async function githubFetch<T>(url: RequestInfo | URL, options?: RequestInit): Pr
         console.error(url);
 
         return Response.json({}) as T;
-    }
-}
-
-function jsonParse<T>(json: string): T {
-    try {
-        return JSON5.parse(json);
-    } catch (error) {
-        console.error(error);
-        console.error(json);
-        return {} as T;
     }
 }
