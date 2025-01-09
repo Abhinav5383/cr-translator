@@ -1,12 +1,12 @@
 import JSON5 from "json5";
 
 let RAW_GITHUB_URL = "https://raw.githubusercontent.com";
+// CORS reasons
 if (import.meta.env.DEV === true) {
     RAW_GITHUB_URL = "";
 }
 
 const GITHUB_API_URL = "https://api.github.com";
-const REPO_PATH = "FinalForEach/Cosmic-Reach-Localization";
 const LANG_DIR = "assets/base/lang";
 
 const CACHE = new Map<string, unknown>();
@@ -20,8 +20,12 @@ export interface Dir {
     files?: Dir[];
 }
 
-export async function getLocales(): Promise<Dir[]> {
-    const items = await githubFetch<Dir[]>(`${GITHUB_API_URL}/repos/${REPO_PATH}/contents/${LANG_DIR}`);
+export async function getLocales(RepoPath: string): Promise<Dir[]> {
+    const [Repo, Ref] = ParseRepoPath(RepoPath);
+    let url = `${GITHUB_API_URL}/repos/${Repo}/contents/${LANG_DIR}`;
+    if (Ref) url += `?ref=${Ref}`;
+
+    const items = await githubFetch<Dir[]>(url);
 
     const files = items.map((item) => {
         return {
@@ -36,9 +40,13 @@ export async function getLocales(): Promise<Dir[]> {
     return dirs;
 }
 
-export async function getFilesPerLocale(path = `${LANG_DIR}/en_us`) {
+export async function getFilesPerLocale(RepoPath: string, path = `${LANG_DIR}/en_us`) {
     const localeFiles: Dir[] = [];
-    const items = await githubFetch<Dir[]>(`${GITHUB_API_URL}/repos/${REPO_PATH}/contents/${path}`);
+    const [Repo, Ref] = ParseRepoPath(RepoPath);
+    let url = `${GITHUB_API_URL}/repos/${Repo}/contents/${path}`;
+    if (Ref) url += `?ref=${Ref}`;
+
+    const items = await githubFetch<Dir[]>(url);
 
     for (const item of items) {
         const dirObj: Dir = {
@@ -49,7 +57,7 @@ export async function getFilesPerLocale(path = `${LANG_DIR}/en_us`) {
         };
 
         if (item.type === "dir") {
-            const files = await getFilesPerLocale(item.path);
+            const files = await getFilesPerLocale(RepoPath, item.path);
             dirObj.files = files;
         }
 
@@ -59,12 +67,13 @@ export async function getFilesPerLocale(path = `${LANG_DIR}/en_us`) {
     return localeFiles;
 }
 
-export async function getLocaleFileContents(path: string) {
-    return await githubFetch<Record<string, string>>(`${RAW_GITHUB_URL}/${REPO_PATH}/master/${path}`);
+export async function getLocaleFileContents(RepoPath: string, path: string) {
+    const [Repo, Ref] = ParseRepoPath(RepoPath);
+    return await githubFetch<Record<string, string>>(`${RAW_GITHUB_URL}/${Repo}/${Ref || "master"}/${path}`);
 }
 
-export function getAbsoluteDirUrl(dir: Dir) {
-    return `${GITHUB_API_URL}/${REPO_PATH}/contents/${LANG_DIR}/${dir.path}`;
+export function getAbsoluteDirUrl(RepoPath: string, dir: Dir) {
+    return `${GITHUB_API_URL}/${RepoPath}/contents/${LANG_DIR}/${dir.path}`;
 }
 
 export function getDirFiles(dir: Dir[]) {
@@ -86,7 +95,12 @@ async function githubFetch<T>(url: RequestInfo | URL, options?: RequestInit): Pr
     if (cachedResponse) return cachedResponse as T;
 
     try {
-        const res = await fetch(url, options);
+        const res = await fetch(url, {
+            // headers: {
+            //     Authorization: "token TOKEN",
+            // },
+            ...options,
+        });
         const json = jsonParse<T>(await res.text());
         CACHE.set(url.toString(), json);
 
@@ -108,4 +122,11 @@ function jsonParse<T>(json: string): T {
         console.error(error);
         return {} as T;
     }
+}
+
+
+function ParseRepoPath(path: string) {
+    if (!path.includes("/tree/")) return [path, ""];
+    const split = path.split("/tree/");
+    return [split[0], split[1]];
 }

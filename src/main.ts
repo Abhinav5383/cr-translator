@@ -1,8 +1,14 @@
 import { type Dir, getDirFiles, getFilesPerLocale, getLocaleFileContents, getLocales } from "./api";
 
 async function main() {
-    const locales = await getLocales();
-    const filesPerLocale = await getFilesPerLocale();
+    const RepoPathInput = getRepoUrlInput();
+    const translatingFile = document.getElementById("locale-file") as HTMLSelectElement;
+    const fromLocale = document.getElementById("from-locale") as HTMLSelectElement;
+    const toLocale = document.getElementById("to-locale") as HTMLSelectElement;
+
+    const RepoPath = getRepoPath();
+    const locales = await getLocales(RepoPath);
+    const filesPerLocale = await getFilesPerLocale(RepoPath);
 
     // Set locales options
     setLocaleFileOptions(filesPerLocale);
@@ -10,11 +16,7 @@ async function main() {
     setToLocaleOptions(locales);
 
     // Add event listeners
-    const translatingFile = document.getElementById("locale-file") as HTMLSelectElement;
-    const fromLocale = document.getElementById("from-locale") as HTMLSelectElement;
-    const toLocale = document.getElementById("to-locale") as HTMLSelectElement;
-
-    async function handleChange() {
+    async function refreshFiles() {
         const sourceFile = translatingFile.options[translatingFile.selectedIndex || 0] as HTMLOptionElement;
         const fromLocaleOption = fromLocale.options[fromLocale.selectedIndex || 0] as HTMLOptionElement;
         const toLocaleOption = toLocale.options[toLocale.selectedIndex || 0] as HTMLOptionElement;
@@ -22,19 +24,36 @@ async function main() {
         await addTranslationInputs(sourceFile, fromLocaleOption, toLocaleOption);
         updateTranslatedJSON();
     }
-    handleChange();
+    refreshFiles();
 
     translatingFile.addEventListener("change", () => {
-        handleChange();
+        refreshFiles();
     });
 
     fromLocale.addEventListener("change", () => {
-        handleChange();
+        refreshFiles();
     });
 
     toLocale.addEventListener("change", () => {
-        handleChange();
+        refreshFiles();
     });
+
+    // Repo path input
+    RepoPathInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            setRepoPath(RepoPathInput.value);
+
+            if (RepoPath !== RepoPathInput.value) {
+                window.location.reload();
+            }
+        }
+    });
+    RepoPathInput.addEventListener("focusout", () => {
+        setRepoPath(RepoPathInput.value);
+        if (RepoPath !== RepoPathInput.value) {
+            window.location.reload();
+        }
+    })
 
     // Handle copy and download buttons
     const copyButton = document.getElementById("copy-btn") as HTMLButtonElement;
@@ -68,16 +87,17 @@ async function main() {
 main();
 
 async function addTranslationInputs(sourceFile: HTMLOptionElement, fromLocale: HTMLOptionElement, toLocale: HTMLOptionElement) {
+    const RepoPath = getRepoPath();
     const inputsContainer = document.querySelector(".inputs-container") as HTMLDivElement;
     inputsContainer.innerHTML = Loading();
 
-    const sourceJSON = await getLocaleFileContents(sourceFile.dataset.path || "");
+    const sourceJSON = await getLocaleFileContents(RepoPath, sourceFile.dataset.path || "");
 
     const fromJSON_path = (sourceFile.dataset.path || "").replace("en_us", fromLocale.value);
-    const fromJSON = await getLocaleFileContents(fromJSON_path);
+    const fromJSON = await getLocaleFileContents(RepoPath, fromJSON_path);
 
     const toJSON_path = (sourceFile.dataset.path || "").replace("en_us", toLocale.value);
-    const toJSON = toLocale.value === "new_locale" ? {} : await getLocaleFileContents(toJSON_path);
+    const toJSON = toLocale.value === "new_locale" ? {} : await getLocaleFileContents(RepoPath, toJSON_path);
 
     const translationKeys = Object.keys(sourceJSON);
     inputsContainer.innerHTML = "";
@@ -245,6 +265,25 @@ function setLocaleFileOptions(files: Dir[]) {
 
         addOption(file);
     }
+}
+
+function setRepoPath(path: string) {
+    localStorage.setItem("repo-url", path);
+}
+
+function getRepoPath() {
+    const RepoPathInput = getRepoUrlInput();
+    const path = localStorage.getItem("repo-url");
+
+    if (path?.length) {
+        RepoPathInput.value = path;
+    }
+
+    return RepoPathInput.value;
+}
+
+function getRepoUrlInput() {
+    return document.getElementById("repo-url") as HTMLInputElement;
 }
 
 function Loading() {

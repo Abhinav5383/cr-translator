@@ -1,6 +1,6 @@
 header {
     background-color: var(--background-raised);
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 1.5rem;
     display: grid;
     grid-template-columns: 1fr;
 }
@@ -9,9 +9,11 @@ nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
 }
 
-nav>div {
+nav .nav-item-box {
+    flex-grow: 1;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -24,4 +26,20 @@ nav .logo {
 
 nav .title {
     font-size: 1.25rem;
+}
+
+.repo-url-input-box {
+    justify-content: flex-end;
+}
+
+#repo-url {
+    min-width: clamp(32rem, 100%, 48rem);
+    width: fit-content;
+    max-width: 48rem;
+    box-shadow: 0 0 0 0.1rem var(--background-raised-a-lot);
+}
+
+#repo-url:focus {
+    color: var(--foreground);
+    box-shadow: 0 0 0 0.1rem #50A0E0;
 }
