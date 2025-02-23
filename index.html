@@ -1,70 +1,19 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="dark">
 
 <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="src/styles/index.css">
-    <title>Cosmic Reach Translation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="shortcut icon" type="image/ico" href="/src/assets/icon.png" />
+    <title>Cosmic Reach Translator</title>
 </head>
 
 <body>
-    <div id="app">
-        <header>
-            <nav>
-                <div class="nav-item-box">
-                    <img src="/icon.png" class="logo" />
-                    <h1 class="title">Cosmic Reach locale translation tool</h1>
-                </div>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
 
-                <div class="nav-item-box repo-url-input-box">
-                    <input type="text" name="repo" id="repo-url" placeholder="USER/REPO" size="0"
-                        value="FinalForEach/Cosmic-Reach-Localization/tree/master">
-                </div>
-            </nav>
-        </header>
-
-        <main class="content">
-            <div class="selectors">
-                <!-- File Selected -->
-                <div class="select-box">
-                    <label for="locale-file">File:</label>
-                    <select id="locale-file">
-                    </select>
-                </div>
-
-                <!-- Source view language -->
-                <div class="select-box">
-                    <label for="from-locale">From:</label>
-                    <select id="from-locale">
-                    </select>
-                </div>
-
-                <!-- Edit view language -->
-                <div class="select-box">
-                    <label for="to-locale">To:</label>
-                    <select id="to-locale">
-                    </select>
-                </div>
-            </div>
-
-            <div class="inputs-container">
-                <div class="loading">Loading...</div>
-            </div>
-
-            <div class="result">
-                <textarea id="translated-json" placeholder="Translated JSON"></textarea>
-
-                <div class="action-buttons">
-                    <button id="download-btn" class="button secondary">Download</button>
-                    <button id="copy-btn" class="button primary">Copy JSON</button>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script type="module" src="/src/main.ts"></script>
+    <script src="/src/index.tsx" type="module"></script>
 </body>
 
 </html>

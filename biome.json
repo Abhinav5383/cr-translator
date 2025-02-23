@@ -1,13 +1,25 @@
 {
     "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
     "files": {
-        "ignore": ["./**/node_modules/*", "./**/dist/*", "./**/build/*", "./**/public/*"],
+        "ignore": [
+            "./**/node_modules/*",
+            "./**/dist/*",
+            "./**/build/*",
+            "./**/public/*",
+            "./**/pm2.config.cjs",
+            "./**/.react-router/*",
+            "./**/wailsjs/*",
+            "./**/.vitepress/*"
+        ],
         "include": ["./*"]
     },
     "linter": {
         "enabled": true,
-        "ignore": ["./**/*.css"],
+        "ignore": ["./**/*.css", "./**/entry.server.tsx"],
         "rules": {
+            "correctness": {
+                "useExhaustiveDependencies": "off"
+            },
             "style": {
                 "noParameterAssign": "off"
             }
