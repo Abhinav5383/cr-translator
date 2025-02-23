@@ -18,8 +18,9 @@
         "json5": "^2.2.3",
         "lucide-solid": "^0.475.0",
         "solid-js": "^1.9.3",
-        "tailwind-merge": "^3.0.1",
-        "tailwindcss": "^4.0.8"
+        "tailwind-merge": "^3.0.2",
+        "tailwindcss": "^4.0.8",
+        "tailwindcss-animate": "^1.0.7"
     },
     "devDependencies": {
         "@biomejs/biome": "1.9.4",
