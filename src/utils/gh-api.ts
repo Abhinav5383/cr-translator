@@ -116,6 +116,8 @@ async function githubFetch<T>(url: RequestInfo | URL, options?: RequestInit): Pr
             // },
             ...options,
         });
+        if (!res.ok) return {} as T;
+
         const json = jsonParse<T>(await res.text());
         CACHE.set(url.toString(), json);
 

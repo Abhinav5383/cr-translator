@@ -62,8 +62,10 @@ function HomePage(props: HomePageProps) {
         });
     }
 
-    const selectedRefLocale = () =>
-        (searchParams.ref_locale as string) || locales().some((l) => l.name === "en_us") ? "en_us" : locales()[0].name;
+    const selectedRefLocale = () => {
+        if (searchParams.ref_locale) return searchParams.ref_locale as string;
+        return locales().some((l) => l.name === "en_us") ? "en_us" : locales()[0].name;
+    };
     function setSelectedRefLocale(locale: string) {
         setSearchParams({
             ref_locale: locale,
@@ -213,35 +215,48 @@ function HomePage(props: HomePageProps) {
                     </div>
                 }
             >
-                <div class="bg-card-background p-4 rounded-lg min-h-[80dvh] grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
-                    <NestedInputRow
-                        absoluteKey=""
-                        valueRaw={refLocale_content() || {}}
-                        valueTranslated={translationLocale_content() || {}}
-                    />
-                </div>
-
-                <div class="col-span-full pb-16 flex flex-col gap-4">
-                    <TextFieldRoot class="">
-                        <TextArea
-                            placeholder="Translated JSON"
-                            class="bg-card-background font-mono min-h-[75dvh] text-base"
-                            value={JSON.stringify(translation(), null, 4)}
-                            spellcheck={false}
-                            onChange={handleTextareaChange}
+                <Show when={ObjHasValues(refLocale_content())}>
+                    <div class="bg-card-background p-4 rounded-lg min-h-[80dvh] grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
+                        <NestedInputRow
+                            absoluteKey=""
+                            valueRaw={refLocale_content() || {}}
+                            valueTranslated={translationLocale_content() || {}}
                         />
-                    </TextFieldRoot>
-
-                    <div class="col-span-full flex items-center justify-end">
-                        <Button variant="ghost" onClick={downloadJson}>
-                            Download
-                        </Button>
-
-                        <Button variant="ghost" onClick={copyJson}>
-                            Copy JSON
-                        </Button>
                     </div>
-                </div>
+
+                    <div class="col-span-full pb-16 flex flex-col gap-4">
+                        <TextFieldRoot class="">
+                            <TextArea
+                                placeholder="Translated JSON"
+                                class="bg-card-background font-mono min-h-[75dvh] text-base"
+                                value={JSON.stringify(translation(), null, 4)}
+                                spellcheck={false}
+                                onChange={handleTextareaChange}
+                            />
+                        </TextFieldRoot>
+
+                        <div class="col-span-full flex items-center justify-end">
+                            <Button variant="ghost" onClick={downloadJson}>
+                                Download
+                            </Button>
+
+                            <Button variant="ghost" onClick={copyJson}>
+                                Copy JSON
+                            </Button>
+                        </div>
+                    </div>
+                </Show>
+
+                <Show when={!ObjHasValues(refLocale_content())}>
+                    <div class="col-span-full grid place-items-center py-12">
+                        <p class="text-lg text-muted-foreground font-mono text-center">
+                            Selected ref locale{" "}
+                            <span class="text-foreground bg-card-background rounded-sm px-1">{selectedRefLocale()}</span> doesn't have
+                            translation available for the file{" "}
+                            <span class="text-foreground bg-card-background rounded-sm px-1">{selectedLocaleFile()}</span>
+                        </p>
+                    </div>
+                </Show>
             </Show>
         </main>
     );
@@ -404,4 +419,14 @@ function updateObject(obj: JsonObject, targetKey: string[], value: Json): Json {
         ...obj,
         [targetKey[0]]: updateObject(obj[targetKey[0]] as JsonObject, targetKey.slice(1), value),
     };
+}
+
+function ObjHasValues(obj: JsonObject | undefined) {
+    if (!obj) return false;
+
+    try {
+        return Object.keys(obj).length > 0;
+    } catch (error) {
+        return false;
+    }
 }
