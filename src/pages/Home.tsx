@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import { FullPageLoading } from "@/components/ui/loading";
 import { TextArea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { loadSelections, saveSelections } from "./local-db";
 
 export const [repoPath, setRepoPath] = createSignal<string>("FinalForEach/Cosmic-Reach-Localization/tree/master");
 export const [langDir, setLangDir] = createSignal<string>("assets/base/lang");
@@ -40,7 +41,9 @@ function HomePage(props: HomePageProps) {
     if (!locales() || !localeFiles()) {
         return (
             <div class="w-full p-12 flex items-center justify-center">
-                <p class="text-md font-bold text-danger-foreground">Unable to fetch locale data from GitHub!</p>
+                <p class="text-md font-bold text-danger-foreground">
+                    Unable to fetch locale data from GitHub! Please check the console for error details.
+                </p>
             </div>
         );
     }
@@ -52,19 +55,24 @@ function HomePage(props: HomePageProps) {
         return list;
     };
 
+    const savedSelections = () => loadSelections();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // File and locale selections
-    const selectedLocaleFile = () => (searchParams.file as string) || filesNames()[0].name;
+    const selectedLocaleFile = () => {
+        if (searchParams.file) return searchParams.file as string;
+        return savedSelections().file;
+    };
     function setSelectedLocaleFile(file: string) {
         setSearchParams({
             file: file,
         });
     }
 
+    // Selection values
     const selectedRefLocale = () => {
         if (searchParams.ref_locale) return searchParams.ref_locale as string;
-        return locales().some((l) => l.name === "en_us") ? "en_us" : locales()[0].name;
+        return savedSelections().refLocale;
     };
     function setSelectedRefLocale(locale: string) {
         setSearchParams({
@@ -72,12 +80,24 @@ function HomePage(props: HomePageProps) {
         });
     }
 
-    const selectedTranslationLocale = () => (searchParams.translation_locale as string) || undefined;
+    const selectedTranslationLocale = () => {
+        if (searchParams.translation_locale) return searchParams.translation_locale as string;
+        return savedSelections().translationLocale;
+    };
     function setSelectedTranslationLocale(locale: string) {
         setSearchParams({
             translation_locale: locale,
         });
     }
+
+    // Save the selections to local storage when they change
+    createEffect(() => {
+        saveSelections({
+            file: selectedLocaleFile(),
+            refLocale: selectedRefLocale(),
+            translationLocale: selectedTranslationLocale(),
+        });
+    });
 
     // Deps
     const refLocale_deps = () => ({ langDir: langDir(), selectedLocaleFile: selectedLocaleFile(), selectedRefLocale: selectedRefLocale() });
@@ -110,6 +130,7 @@ function HomePage(props: HomePageProps) {
 
         try {
             const _translation = JSON.parse(value);
+            console.log(_translation);
             setTranslation(_translation);
         } catch (e) {
             console.error(e);
@@ -215,13 +236,21 @@ function HomePage(props: HomePageProps) {
                     </div>
                 }
             >
-                <Show when={ObjHasValues(refLocale_content())}>
+                <Show
+                    when={ObjHasValues(refLocale_content())}
+                    fallback={
+                        <div class="col-span-full grid place-items-center py-12">
+                            <p class="text-lg text-muted-foreground font-mono text-center">
+                                Selected ref locale{" "}
+                                <span class="text-foreground bg-card-background rounded-sm px-1">{selectedRefLocale()}</span> doesn't have
+                                translation available for the file{" "}
+                                <span class="text-foreground bg-card-background rounded-sm px-1">{selectedLocaleFile()}</span>
+                            </p>
+                        </div>
+                    }
+                >
                     <div class="bg-card-background p-4 rounded-lg min-h-[80dvh] grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
-                        <NestedInputRow
-                            absoluteKey=""
-                            valueRaw={refLocale_content() || {}}
-                            valueTranslated={translationLocale_content() || {}}
-                        />
+                        <NestedInputRow absoluteKey="" valueRaw={refLocale_content()} valueTranslated={translationLocale_content()} />
                     </div>
 
                     <div class="col-span-full pb-16 flex flex-col gap-4">
@@ -246,17 +275,6 @@ function HomePage(props: HomePageProps) {
                         </div>
                     </div>
                 </Show>
-
-                <Show when={!ObjHasValues(refLocale_content())}>
-                    <div class="col-span-full grid place-items-center py-12">
-                        <p class="text-lg text-muted-foreground font-mono text-center">
-                            Selected ref locale{" "}
-                            <span class="text-foreground bg-card-background rounded-sm px-1">{selectedRefLocale()}</span> doesn't have
-                            translation available for the file{" "}
-                            <span class="text-foreground bg-card-background rounded-sm px-1">{selectedLocaleFile()}</span>
-                        </p>
-                    </div>
-                </Show>
             </Show>
         </main>
     );
@@ -265,8 +283,8 @@ function HomePage(props: HomePageProps) {
 interface NestedInputRowProps {
     absoluteKey: string;
     key?: string;
-    valueRaw: JsonObject;
-    valueTranslated: JsonObject;
+    valueRaw: JsonObject | undefined;
+    valueTranslated: JsonObject | undefined;
     depth?: number;
 }
 
@@ -285,7 +303,7 @@ function NestedInputRow(props: NestedInputRowProps) {
     }
 
     const [isExpanded, setIsExpanded] = createSignal<boolean>(true);
-    const keys_fromRaw = Object.keys(props.valueRaw);
+    const keys_fromRaw = Object.keys(props.valueRaw || {});
     const keys_fromTranslated = Object.keys(props.valueTranslated || {});
 
     const keys = Array.from(new Set(keys_fromRaw.concat(keys_fromTranslated)));
