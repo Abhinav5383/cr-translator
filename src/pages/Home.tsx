@@ -139,11 +139,11 @@ function HomePage(props: HomePageProps) {
     }
 
     function copyJson() {
-        navigator.clipboard.writeText(JSON.stringify(translation(), null, 4));
+        navigator.clipboard.writeText(stringifyJson(translation()));
     }
 
     function downloadJson() {
-        const blob = new Blob([JSON.stringify(translation(), null, 4)], { type: "application/json" });
+        const blob = new Blob([stringifyJson(translation())], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement("a");
@@ -258,7 +258,7 @@ function HomePage(props: HomePageProps) {
                             <TextArea
                                 placeholder="Translated JSON"
                                 class="bg-card-background font-mono min-h-[75dvh] text-base"
-                                value={JSON.stringify(translation(), null, 4)}
+                                value={stringifyJson(translation())}
                                 spellcheck={false}
                                 onChange={handleTextareaChange}
                             />
@@ -447,4 +447,8 @@ function ObjHasValues(obj: JsonObject | undefined) {
     } catch (error) {
         return false;
     }
+}
+
+function stringifyJson(json: Json) {
+    return JSON.stringify(json, null, 4).replaceAll("\\\\", "\\");
 }
