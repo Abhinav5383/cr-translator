@@ -1,16 +1,16 @@
-import { useSearchParams } from "@solidjs/router";
-import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
-import { createEffect, createResource, createSignal, For, Show } from "solid-js";
-import { TextField, TextFieldRoot } from "@components/ui/text-field";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
-import type { Json, JsonObject } from "@/utils/types";
-import { ChevronDownIcon } from "lucide-solid";
-import { cn } from "@/utils/cn";
+import { LoadSettings } from "@/components/layout/Settings";
+import { Button } from "@/components/ui/button";
 import { FullPageLoading } from "@/components/ui/loading";
 import { TextArea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/utils/cn";
+import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
+import type { Json, JsonObject } from "@/utils/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
+import { TextField, TextFieldRoot } from "@components/ui/text-field";
+import { useSearchParams } from "@solidjs/router";
+import ChevronDownIcon from "lucide-solid/icons/chevron-down";
+import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { loadSelections, saveSelections } from "./local-db";
-import { LoadSettings } from "@/components/layout/Settings";
 
 const settings = LoadSettings();
 export const [repoPath, setRepoPath] = createSignal(settings.repoPath);
@@ -102,7 +102,11 @@ function HomePage(props: HomePageProps) {
     });
 
     // Deps
-    const refLocale_deps = () => ({ langDir: langDir(), selectedLocaleFile: selectedLocaleFile(), selectedRefLocale: selectedRefLocale() });
+    const refLocale_deps = () => ({
+        langDir: langDir(),
+        selectedLocaleFile: selectedLocaleFile(),
+        selectedRefLocale: selectedRefLocale(),
+    });
     const translationLocale_deps = () => ({
         langDir: langDir(),
         selectedLocaleFile: selectedLocaleFile(),
@@ -145,7 +149,9 @@ function HomePage(props: HomePageProps) {
     }
 
     function downloadJson() {
-        const blob = new Blob([stringifyJson(translation())], { type: "application/json" });
+        const blob = new Blob([stringifyJson(translation())], {
+            type: "application/json",
+        });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement("a");
@@ -244,15 +250,19 @@ function HomePage(props: HomePageProps) {
                         <div class="col-span-full grid place-items-center py-12">
                             <p class="text-lg text-muted-foreground font-mono text-center">
                                 Selected ref locale{" "}
-                                <span class="text-foreground bg-card-background rounded-sm px-1">{selectedRefLocale()}</span> doesn't have
-                                translation available for the file{" "}
+                                <span class="text-foreground bg-card-background rounded-sm px-1">{selectedRefLocale()}</span>{" "}
+                                doesn't have translation available for the file{" "}
                                 <span class="text-foreground bg-card-background rounded-sm px-1">{selectedLocaleFile()}</span>
                             </p>
                         </div>
                     }
                 >
-                    <div class="bg-card-background p-4 rounded-lg min-h-[80dvh] grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
-                        <NestedInputRow absoluteKey="" valueRaw={refLocale_content()} valueTranslated={translationLocale_content()} />
+                    <div class="bg-card-background px-6 py-4 rounded-lg min-h-[80dvh] grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
+                        <NestedInputRow
+                            absoluteKey=""
+                            valueRaw={refLocale_content()}
+                            valueTranslated={translationLocale_content()}
+                        />
                     </div>
 
                     <div class="col-span-full pb-16 flex flex-col gap-4">
@@ -291,7 +301,14 @@ interface NestedInputRowProps {
 }
 
 function NestedInputRow(props: NestedInputRowProps) {
+    if (props.key && ["$schema"].includes(props.key)) return null;
+
     const depth = () => props.depth || 0;
+
+    console.log({
+        key: props.key,
+        depth: depth(),
+    });
 
     if (typeof props.valueRaw !== "object" || Array.isArray(props.valueRaw) || Array.isArray(props.valueTranslated)) {
         return (
@@ -300,6 +317,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                 absoluteKey={props.absoluteKey}
                 valueRaw={props.valueRaw || ""}
                 valueTranslated={props.valueTranslated || ""}
+                depth={depth()}
             />
         );
     }
@@ -318,8 +336,10 @@ function NestedInputRow(props: NestedInputRowProps) {
         <>
             <Show when={(props.key?.length || 0) > 0}>
                 <span
-                    class="col-span-full inline-flex items-center justify-start gap-2 cursor-pointer hover:bg-shallow-background/50 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-extra-muted-foreground"
-                    // biome-ignore lint/a11y/noNoninteractiveTabindex: <explanation>
+                    class={cn(
+                        "col-span-full flex items-center justify-start p-1.5 gap-2 cursor-pointer hover:bg-shallow-background/50 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-extra-muted-foreground",
+                        !isExpanded() && "bg-shallow-background/25",
+                    )}
                     tabIndex={0}
                     onClick={toggleExpanded}
                     onKeyPress={(e) => {
@@ -329,7 +349,10 @@ function NestedInputRow(props: NestedInputRowProps) {
                     }}
                 >
                     <ChevronDownIcon
-                        class={cn("h-5 w-5 text-muted-foreground inline", isExpanded() ? "transform rotate-180" : "transform rotate-0")}
+                        class={cn(
+                            "h-5 w-5 text-muted-foreground inline",
+                            isExpanded() ? "transform rotate-180" : "transform rotate-0",
+                        )}
                     />
                     {props.key}
                 </span>
@@ -339,8 +362,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                 <div
                     class="grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2"
                     style={{
-                        "margin-left": `${depth() * 2}rem`,
-                        "margin-bottom": depth() === 0 ? "0" : "0.5rem",
+                        "padding-bottom": depth() === 0 ? "0" : "0.5rem",
                     }}
                 >
                     <For each={keys}>
@@ -367,6 +389,7 @@ interface InputRowProps {
     absoluteKey: string;
     valueRaw: Json;
     valueTranslated: Json;
+    depth: number;
 }
 
 type onInput_EventType = InputEvent & {
@@ -374,6 +397,8 @@ type onInput_EventType = InputEvent & {
 };
 
 function InputRow(props: InputRowProps) {
+    const depth = () => props.depth;
+
     function UpdateTranslation(e: onInput_EventType) {
         const value = e.currentTarget.value;
 
@@ -382,12 +407,18 @@ function InputRow(props: InputRowProps) {
     }
 
     return (
-        <TextFieldRoot class="grid grid-cols-subgrid col-span-full gap-4">
+        <TextFieldRoot
+            class="grid grid-cols-subgrid col-span-full items-center gap-4 py-0.5"
+            style={{
+                "padding-left": depth() > 1 ? `${(depth() - 1) * 2}rem` : undefined,
+            }}
+        >
             <label class="text-muted-foreground" for={`input-${props.absoluteKey}`}>
                 {props.key}
             </label>
 
-            <TextField value={stringify(props.valueRaw || "")} readOnly />
+            <TextField value={stringify(props.valueRaw || "")} readOnly class="m-0" />
+
             <TextField
                 value={stringify(props.valueTranslated || "")}
                 id={`input-${props.absoluteKey}`}

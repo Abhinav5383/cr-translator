@@ -19,11 +19,11 @@ export function saveSelections(selections: SelectionValues) {
         translationLocale: selections.translationLocale,
     });
 
-    localStorage.setItem(SELECTIONS_KEY, json);
+    sessionStorage.setItem(SELECTIONS_KEY, json);
 }
 
 export function loadSelections(): SelectionValues {
-    const selections = localStorage.getItem(SELECTIONS_KEY);
+    const selections = sessionStorage.getItem(SELECTIONS_KEY);
     if (!selections) return DEFAULT_SELECTIONS;
 
     try {

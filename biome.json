@@ -1,7 +1,7 @@
 {
-    "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+    "$schema": "https://biomejs.dev/schemas/2.3.2/schema.json",
     "files": {
-        "includes": ["./**/*.{tsx,ts,json}", "!**/node_modules/*", "!**/dist/*", "!**/build/*", "!**/public/*"]
+        "includes": ["**/*.{tsx,ts,json,css,cjs}", "!**/node_modules/*", "!**/dist/*", "!**/build/*", "!**/public/*"]
     },
     "linter": {
         "enabled": true,
@@ -13,9 +13,6 @@
             "style": {
                 "noParameterAssign": "off",
                 "useImportType": "error"
-            },
-            "nursery": {
-                "noTsIgnore": "off"
             },
             "a11y": {
                 "useSemanticElements": "info",
@@ -31,5 +28,10 @@
         "lineWidth": 130,
         "indentWidth": 4,
         "indentStyle": "space"
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
+        }
     }
 }

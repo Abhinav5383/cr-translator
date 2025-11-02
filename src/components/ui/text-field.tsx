@@ -53,7 +53,9 @@ type textFieldErrorMessageProps<T extends ValidComponent = "div"> = TextFieldErr
     class?: string;
 };
 
-export const TextFieldErrorMessage = <T extends ValidComponent = "div">(props: PolymorphicProps<T, textFieldErrorMessageProps<T>>) => {
+export const TextFieldErrorMessage = <T extends ValidComponent = "div">(
+    props: PolymorphicProps<T, textFieldErrorMessageProps<T>>,
+) => {
     const [local, rest] = splitProps(props as textFieldErrorMessageProps, ["class"]);
 
     return <TextFieldPrimitive.ErrorMessage class={cn(textfieldLabel({ error: true }), local.class)} {...rest} />;
@@ -63,10 +65,14 @@ type textFieldDescriptionProps<T extends ValidComponent = "div"> = TextFieldDesc
     class?: string;
 };
 
-export const TextFieldDescription = <T extends ValidComponent = "div">(props: PolymorphicProps<T, textFieldDescriptionProps<T>>) => {
+export const TextFieldDescription = <T extends ValidComponent = "div">(
+    props: PolymorphicProps<T, textFieldDescriptionProps<T>>,
+) => {
     const [local, rest] = splitProps(props as textFieldDescriptionProps, ["class"]);
 
-    return <TextFieldPrimitive.Description class={cn(textfieldLabel({ description: true, label: false }), local.class)} {...rest} />;
+    return (
+        <TextFieldPrimitive.Description class={cn(textfieldLabel({ description: true, label: false }), local.class)} {...rest} />
+    );
 };
 
 type textFieldInputProps<T extends ValidComponent = "input"> = VoidProps<

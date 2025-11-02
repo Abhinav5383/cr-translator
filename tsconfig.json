@@ -8,20 +8,13 @@
         "esModuleInterop": true,
         "jsx": "preserve",
         "jsxImportSource": "solid-js",
-        "types": [
-            "vite/client",
-            "bun-types"
-        ],
+        "types": ["vite/client", "bun-types"],
         "noEmit": true,
         "isolatedModules": true,
         "baseUrl": "./",
         "paths": {
-            "@/*": [
-                "./src/*"
-            ],
-            "@components/*": [
-                "./src/components/*"
-            ],
+            "@/*": ["./src/*"],
+            "@components/*": ["./src/components/*"]
         }
     }
 }
