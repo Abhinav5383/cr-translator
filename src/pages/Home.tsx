@@ -1,3 +1,8 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
+import { TextField, TextFieldRoot } from "@components/ui/text-field";
+import { useSearchParams } from "@solidjs/router";
+import ChevronDownIcon from "lucide-solid/icons/chevron-down";
+import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { LoadSettings } from "@/components/layout/Settings";
 import { Button } from "@/components/ui/button";
 import { FullPageLoading } from "@/components/ui/loading";
@@ -5,11 +10,6 @@ import { TextArea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
 import type { Json, JsonObject } from "@/utils/types";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
-import { TextField, TextFieldRoot } from "@components/ui/text-field";
-import { useSearchParams } from "@solidjs/router";
-import ChevronDownIcon from "lucide-solid/icons/chevron-down";
-import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { loadSelections, saveSelections } from "./local-db";
 
 const settings = LoadSettings();
@@ -305,11 +305,6 @@ function NestedInputRow(props: NestedInputRowProps) {
 
     const depth = () => props.depth || 0;
 
-    console.log({
-        key: props.key,
-        depth: depth(),
-    });
-
     if (typeof props.valueRaw !== "object" || Array.isArray(props.valueRaw) || Array.isArray(props.valueTranslated)) {
         return (
             <InputRow
@@ -335,12 +330,12 @@ function NestedInputRow(props: NestedInputRowProps) {
     return (
         <>
             <Show when={(props.key?.length || 0) > 0}>
-                <span
+                <button
+                    type="button"
                     class={cn(
                         "col-span-full flex items-center justify-start p-1.5 gap-2 cursor-pointer hover:bg-shallow-background/50 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-extra-muted-foreground",
                         !isExpanded() && "bg-shallow-background/25",
                     )}
-                    tabIndex={0}
                     onClick={toggleExpanded}
                     onKeyPress={(e) => {
                         if (e.key === "Enter") {
@@ -355,7 +350,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                         )}
                     />
                     {props.key}
-                </span>
+                </button>
             </Show>
 
             <Show when={isExpanded()}>
