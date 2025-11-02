@@ -10,9 +10,11 @@ import { FullPageLoading } from "@/components/ui/loading";
 import { TextArea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { loadSelections, saveSelections } from "./local-db";
+import { LoadSettings } from "@/components/layout/Settings";
 
-export const [repoPath, setRepoPath] = createSignal<string>("FinalForEach/Cosmic-Reach-Localization/tree/master");
-export const [langDir, setLangDir] = createSignal<string>("assets/base/lang");
+const settings = LoadSettings();
+export const [repoPath, setRepoPath] = createSignal(settings.repoPath);
+export const [langDir, setLangDir] = createSignal(settings.langPath);
 
 const [translation, setTranslation] = createSignal<Json>({});
 

@@ -22,9 +22,9 @@ export interface Dir {
 
 export async function getLocales(RepoPath: string, LANG_DIR: string): Promise<Dir[]> {
     try {
-        const [Repo, Ref] = ParseRepoPath(RepoPath);
-        let url = `${GITHUB_API_URL}/repos/${Repo}/contents/${LANG_DIR}`;
-        if (Ref) url += `?ref=${Ref}`;
+        const [repo, ref] = ParseRepoPath(RepoPath);
+        let url = `${GITHUB_API_URL}/repos/${repo}/contents/${LANG_DIR}`;
+        if (ref) url += `?ref=${ref}`;
 
         const items = await githubFetch<Dir[]>(url);
         const files = items.map((item) => {

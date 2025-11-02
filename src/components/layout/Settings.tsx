@@ -75,7 +75,7 @@ export default function DialogDemo() {
     );
 }
 
-function LoadSettings() {
+export function LoadSettings(): SettingsObj {
     try {
         const settings = localStorage.getItem("settings");
         if (settings) {
@@ -90,4 +90,9 @@ function LoadSettings() {
         repoPath: "FinalForEach/Cosmic-Reach-Localization/tree/master",
         langPath: "assets/base/lang",
     };
+}
+
+interface SettingsObj {
+    repoPath: string;
+    langPath: string;
 }
