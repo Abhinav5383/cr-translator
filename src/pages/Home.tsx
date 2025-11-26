@@ -294,7 +294,7 @@ function HomePage(props: HomePageProps) {
                         <TextFieldRoot class="">
                             <TextArea
                                 placeholder="Translated JSON"
-                                class="bg-card-background font-mono min-h-[30dvh] text-base"
+                                class="bg-card-background font-mono min-h-[80dvh] text-base"
                                 value={stringifyJson(translation())}
                                 spellcheck={false}
                                 onChange={handleTextareaChange}

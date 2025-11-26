@@ -1,7 +1,7 @@
 import { Suspense } from "solid-js";
 import Navbar from "./components/layout/Navbar";
-import { HomePage_Wrapper } from "./pages/Home";
 import { FullPageLoading } from "./components/ui/loading";
+import { HomePage_Wrapper } from "./pages/Home";
 
 export default function App() {
     return (
