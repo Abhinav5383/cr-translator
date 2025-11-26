@@ -1,9 +1,9 @@
-import { cn } from "@/utils/cn";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { SelectContentProps, SelectItemProps, SelectTriggerProps } from "@kobalte/core/select";
 import { Select as SelectPrimitive } from "@kobalte/core/select";
 import type { ParentProps, ValidComponent } from "solid-js";
 import { splitProps } from "solid-js";
+import { cn } from "@/utils/cn";
 
 export const Select = SelectPrimitive;
 export const SelectValue = SelectPrimitive.Value;
@@ -15,13 +15,15 @@ export const SelectSection = SelectPrimitive.Section;
 
 type selectTriggerProps<T extends ValidComponent = "button"> = ParentProps<SelectTriggerProps<T> & { class?: string }>;
 
-export const SelectTrigger = <T extends ValidComponent = "button">(props: PolymorphicProps<T, selectTriggerProps<T>>) => {
+export const SelectTrigger = <T extends ValidComponent = "button">(
+    props: PolymorphicProps<T, selectTriggerProps<T>>,
+) => {
     const [local, rest] = splitProps(props as selectTriggerProps, ["class", "children"]);
 
     return (
         <SelectPrimitive.Trigger
             class={cn(
-                "flex h-9 gap-x-2 w-full items-center justify-between rounded border border-shallow-background bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background transition-shadow cursor-pointer placeholder:text-muted-foreground focus:outline-none focus-visible:ring-[1.5px] focus-visible:ring-extra-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+                "flex h-9 gap-x-2 w-full items-center justify-between rounded border border-shallow-background bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background transition-shadow cursor-pointer placeholder:text-muted-foreground focus:outline-none focus-visible:ring-[1.5px] focus-visible:ring-extra-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 hover:bg-card-background",
                 local.class,
             )}
             {...rest}

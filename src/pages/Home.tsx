@@ -168,75 +168,93 @@ function HomePage(props: HomePageProps) {
         <main class="w-full grid grid-cols-[min-content_1fr_1fr] gap-4">
             <div class="grid col-span-full grid-cols-subgrid border-b border-b-shallow-background pb-4 my-4">
                 {/* File Selector */}
-                <Select
-                    title="Select a file"
-                    placeholder="Select a file..."
-                    itemComponent={(props) => (
-                        <SelectItem class="font-mono" item={props.item}>
-                            {props.item.rawValue}
-                        </SelectItem>
-                    )}
-                    class="font-mono"
-                    disallowEmptySelection={true}
-                    defaultValue={filesNames()[0].name}
-                    value={selectedLocaleFile()}
-                    onChange={(e) => {
-                        if (e) setSelectedLocaleFile(e);
-                    }}
-                    options={filesNames().map((file) => file.name)}
-                >
-                    <SelectTrigger class="min-w-[12rem] w-fit">
-                        <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-                    </SelectTrigger>
+                <div class="flex items-start justify-center flex-col gap-1 text-sm">
+                    <label for="select-file" class="font-mono text-muted-foreground">
+                        Translating
+                    </label>
+                    <Select
+                        id="select-file"
+                        title="Select a file"
+                        placeholder="Select a file..."
+                        itemComponent={(props) => (
+                            <SelectItem class="font-mono" item={props.item}>
+                                {props.item.rawValue}
+                            </SelectItem>
+                        )}
+                        class="font-mono"
+                        disallowEmptySelection={true}
+                        defaultValue={filesNames()[0].name}
+                        value={selectedLocaleFile()}
+                        onChange={(e) => {
+                            if (e) setSelectedLocaleFile(e);
+                        }}
+                        options={filesNames().map((file) => file.name)}
+                    >
+                        <SelectTrigger class="min-w-[12rem] w-fit">
+                            <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                        </SelectTrigger>
 
-                    <SelectContent />
-                </Select>
+                        <SelectContent />
+                    </Select>
+                </div>
 
                 {/* Ref Locale Selector */}
-                <Select
-                    placeholder="Select reference locale"
-                    itemComponent={(props) => (
-                        <SelectItem class="font-mono" item={props.item}>
-                            {props.item.rawValue}
-                        </SelectItem>
-                    )}
-                    class="font-mono"
-                    disallowEmptySelection={true}
-                    value={selectedRefLocale()}
-                    onChange={(e) => {
-                        if (e) setSelectedRefLocale(e);
-                    }}
-                    options={locales().map((locale) => locale.name)}
-                >
-                    <SelectTrigger class="min-w-[12rem] w-fit">
-                        <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-                    </SelectTrigger>
+                <div class="flex items-start justify-center flex-col gap-1 text-sm">
+                    <label for="select-ref-locale" class="font-mono text-muted-foreground">
+                        From
+                    </label>
+                    <Select
+                        id="select-ref-locale"
+                        placeholder="Select reference locale"
+                        itemComponent={(props) => (
+                            <SelectItem class="font-mono" item={props.item}>
+                                {props.item.rawValue}
+                            </SelectItem>
+                        )}
+                        class="font-mono"
+                        disallowEmptySelection={true}
+                        value={selectedRefLocale()}
+                        onChange={(e) => {
+                            if (e) setSelectedRefLocale(e);
+                        }}
+                        options={locales().map((locale) => locale.name)}
+                    >
+                        <SelectTrigger class="min-w-[12rem] w-fit">
+                            <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                        </SelectTrigger>
 
-                    <SelectContent />
-                </Select>
+                        <SelectContent />
+                    </Select>
+                </div>
 
                 {/* Translation locale selector */}
-                <Select
-                    title="Translation locale"
-                    placeholder="Translation locale"
-                    itemComponent={(props) => (
-                        <SelectItem class="font-mono" item={props.item}>
-                            {props.item.rawValue}
-                        </SelectItem>
-                    )}
-                    class="font-mono"
-                    value={selectedTranslationLocale()}
-                    onChange={(e) => {
-                        if (e) setSelectedTranslationLocale(e);
-                    }}
-                    options={["New Locale", ...locales().map((locale) => locale.name)]}
-                >
-                    <SelectTrigger class="min-w-[12rem] w-fit">
-                        <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
-                    </SelectTrigger>
+                <div class="flex items-start justify-center flex-col gap-1 text-sm">
+                    <label for="translating-to" class="font-mono text-muted-foreground">
+                        To
+                    </label>
+                    <Select
+                        id="translating-to"
+                        title="Translation locale"
+                        placeholder="Translation locale"
+                        itemComponent={(props) => (
+                            <SelectItem class="font-mono" item={props.item}>
+                                {props.item.rawValue}
+                            </SelectItem>
+                        )}
+                        class="font-mono"
+                        value={selectedTranslationLocale()}
+                        onChange={(e) => {
+                            if (e) setSelectedTranslationLocale(e);
+                        }}
+                        options={["New Locale", ...locales().map((locale) => locale.name)]}
+                    >
+                        <SelectTrigger class="min-w-[12rem] w-fit">
+                            <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
+                        </SelectTrigger>
 
-                    <SelectContent />
-                </Select>
+                        <SelectContent />
+                    </Select>
+                </div>
             </div>
 
             <Show
@@ -264,7 +282,7 @@ function HomePage(props: HomePageProps) {
                         </div>
                     }
                 >
-                    <div class="bg-card-background px-6 py-4 rounded-lg min-h-[80dvh] grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
+                    <div class="bg-card-background px-6 py-4 rounded-lg grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
                         <NestedInputRow
                             absoluteKey=""
                             valueRaw={refLocale_content()}
@@ -276,15 +294,15 @@ function HomePage(props: HomePageProps) {
                         <TextFieldRoot class="">
                             <TextArea
                                 placeholder="Translated JSON"
-                                class="bg-card-background font-mono min-h-[75dvh] text-base"
+                                class="bg-card-background font-mono min-h-[30dvh] text-base"
                                 value={stringifyJson(translation())}
                                 spellcheck={false}
                                 onChange={handleTextareaChange}
                             />
                         </TextFieldRoot>
 
-                        <div class="col-span-full flex items-center justify-end">
-                            <Button variant="ghost" onClick={downloadJson}>
+                        <div class="col-span-full flex items-center justify-end gap-3">
+                            <Button onClick={downloadJson} title={`Download translated ${selectedLocaleFile()}`}>
                                 Download
                             </Button>
 
