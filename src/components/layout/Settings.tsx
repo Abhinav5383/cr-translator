@@ -1,14 +1,14 @@
-import { createSignal } from "solid-js";
-import type { DialogTriggerProps } from "@kobalte/core/dialog";
 import { Button } from "@components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@components/ui/dialog";
 import { TextField, TextFieldLabel, TextFieldRoot } from "@components/ui/text-field";
+import type { DialogTriggerProps } from "@kobalte/core/dialog";
 
-import SettingsIcon from "lucide-solid/icons/settings";
 import RotateCcwIcon from "lucide-solid/icons/rotate-ccw";
 import SaveIcon from "lucide-solid/icons/save";
+import SettingsIcon from "lucide-solid/icons/settings";
+import { createSignal } from "solid-js";
 
-export default function DialogDemo() {
+export default function SettingsDialog() {
     const settings = LoadSettings();
 
     const [repoPath, setRepoPath] = createSignal(settings.repoPath);

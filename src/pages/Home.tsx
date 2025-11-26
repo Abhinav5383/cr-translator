@@ -10,11 +10,11 @@ import { TextArea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
 import type { Json, JsonObject } from "@/utils/types";
-import { loadSelections, saveSelections } from "./local-db";
+import { loadSelections, NEW_LOCALE_ID, saveSelections } from "./local-db";
 
 const settings = LoadSettings();
-export const [repoPath, setRepoPath] = createSignal(settings.repoPath);
-export const [langDir, setLangDir] = createSignal(settings.langPath);
+const repoPath = () => settings.repoPath;
+const langDir = () => settings.langPath;
 
 const [translation, setTranslation] = createSignal<Json>({});
 
@@ -119,7 +119,10 @@ function HomePage(props: HomePageProps) {
     });
 
     const [translationLocale_content] = createResource(translationLocale_deps, () => {
-        if (!selectedTranslationLocale() || !selectedLocaleFile()) return;
+        const emptyPromise: Promise<JsonObject> = new Promise((resolve) => resolve({}));
+        if (!selectedTranslationLocale() || !selectedLocaleFile()) return emptyPromise;
+        if (selectedTranslationLocale() === NEW_LOCALE_ID) return emptyPromise;
+
         return getLocaleFileContents(repoPath(), `${langDir()}/${selectedTranslationLocale()}/${selectedLocaleFile()}`);
     });
 
@@ -226,7 +229,7 @@ function HomePage(props: HomePageProps) {
                     onChange={(e) => {
                         if (e) setSelectedTranslationLocale(e);
                     }}
-                    options={locales().map((locale) => locale.name)}
+                    options={["New Locale", ...locales().map((locale) => locale.name)]}
                 >
                     <SelectTrigger class="min-w-[12rem] w-fit">
                         <SelectValue<string>>{(state) => state.selectedOption()}</SelectValue>
@@ -250,9 +253,13 @@ function HomePage(props: HomePageProps) {
                         <div class="col-span-full grid place-items-center py-12">
                             <p class="text-lg text-muted-foreground font-mono text-center">
                                 Selected ref locale{" "}
-                                <span class="text-foreground bg-card-background rounded-sm px-1">{selectedRefLocale()}</span>{" "}
+                                <span class="text-foreground bg-card-background rounded-sm px-1">
+                                    {selectedRefLocale()}
+                                </span>{" "}
                                 doesn't have translation available for the file{" "}
-                                <span class="text-foreground bg-card-background rounded-sm px-1">{selectedLocaleFile()}</span>
+                                <span class="text-foreground bg-card-background rounded-sm px-1">
+                                    {selectedLocaleFile()}
+                                </span>
                             </p>
                         </div>
                     }
@@ -472,7 +479,7 @@ function ObjHasValues(obj: JsonObject | undefined) {
 
     try {
         return Object.keys(obj).length > 0;
-    } catch (error) {
+    } catch {
         return false;
     }
 }

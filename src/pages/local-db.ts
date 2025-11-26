@@ -1,9 +1,10 @@
 const SELECTIONS_KEY = "selections";
+export const NEW_LOCALE_ID = "New Locale";
 
 const DEFAULT_SELECTIONS: SelectionValues = {
     file: "game.json",
     refLocale: "en_us",
-    translationLocale: undefined,
+    translationLocale: NEW_LOCALE_ID,
 };
 
 export interface SelectionValues {
