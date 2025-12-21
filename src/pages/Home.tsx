@@ -2,10 +2,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TextField, TextFieldRoot } from "@components/ui/text-field";
 import { useSearchParams } from "@solidjs/router";
 import ChevronDownIcon from "lucide-solid/icons/chevron-down";
-import { createEffect, createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createResource, createSignal, For, type Setter, Show } from "solid-js";
 import { LoadSettings } from "@/components/layout/Settings";
 import { Button } from "@/components/ui/button";
 import { FullPageLoading } from "@/components/ui/loading";
+import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from "@/components/ui/switch";
 import { TextArea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
@@ -15,8 +16,6 @@ import { loadSelections, NEW_LOCALE_ID, saveSelections } from "./local-db";
 const settings = LoadSettings();
 const repoPath = () => settings.repoPath;
 const langDir = () => settings.langPath;
-
-const [translation, setTranslation] = createSignal<Json>({});
 
 export function HomePage_Wrapper() {
     const dep = () => ({ repoPath: repoPath(), langDir: langDir() });
@@ -40,6 +39,18 @@ function HomePage(props: HomePageProps) {
     const locales = () => props.locales || [];
     const localeFiles = () => props.localeFiles || [];
 
+    const savedSelections = () => loadSelections();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const [hideNonEmptyEntries, setHideNonEmptyEntries] = createSignal({
+        enabled: false,
+        translationSnapshot: {} as JsonObject,
+    });
+    // contains the state the translation when hideNonEmptyEntries was enabled
+    // this is needed because any input row will disappear as soon as anything is typed into it
+    // if we hide or show on the basis of original translation Object
+    // const [translationSnapshot, setTranslationSnapshot] = createSignal<JsonObject>({});
+
     if (!locales() || !localeFiles()) {
         return (
             <div class="w-full p-12 flex items-center justify-center">
@@ -56,9 +67,6 @@ function HomePage(props: HomePageProps) {
 
         return list;
     };
-
-    const savedSelections = () => loadSelections();
-    const [searchParams, setSearchParams] = useSearchParams();
 
     // File and locale selections
     const selectedLocaleFile = () => {
@@ -118,17 +126,19 @@ function HomePage(props: HomePageProps) {
         return getLocaleFileContents(repoPath(), `${langDir()}/${selectedRefLocale()}/${selectedLocaleFile()}`);
     });
 
-    const [translationLocale_content] = createResource(translationLocale_deps, () => {
-        const emptyPromise: Promise<JsonObject> = new Promise((resolve) => resolve({}));
-        if (!selectedTranslationLocale() || !selectedLocaleFile()) return emptyPromise;
-        if (selectedTranslationLocale() === NEW_LOCALE_ID) return emptyPromise;
+    const [translationLocale_content, { mutate: setTranslationContent }] = createResource(
+        translationLocale_deps,
+        () => {
+            const emptyPromise: Promise<JsonObject> = new Promise((resolve) => resolve({}));
+            if (!selectedTranslationLocale() || !selectedLocaleFile()) return emptyPromise;
+            if (selectedTranslationLocale() === NEW_LOCALE_ID) return emptyPromise;
 
-        return getLocaleFileContents(repoPath(), `${langDir()}/${selectedTranslationLocale()}/${selectedLocaleFile()}`);
-    });
-
-    createEffect(() => {
-        setTranslation(translationLocale_content() || {});
-    });
+            return getLocaleFileContents(
+                repoPath(),
+                `${langDir()}/${selectedTranslationLocale()}/${selectedLocaleFile()}`,
+            );
+        },
+    );
 
     function handleTextareaChange(
         e: Event & {
@@ -138,9 +148,8 @@ function HomePage(props: HomePageProps) {
         const value = e.currentTarget.value;
 
         try {
-            const _translation = JSON.parse(value);
-            console.log(_translation);
-            setTranslation(_translation);
+            const _translation = JSON.parse(value.replaceAll("\\", "\\\\"));
+            setTranslationContent(_translation);
         } catch (e) {
             console.error(e);
             alert("Invalid JSON in the textarea!\nCheck console for the error message.");
@@ -148,11 +157,11 @@ function HomePage(props: HomePageProps) {
     }
 
     function copyJson() {
-        navigator.clipboard.writeText(stringifyJson(translation()));
+        navigator.clipboard.writeText(stringifyJson(translationLocale_content()));
     }
 
     function downloadJson() {
-        const blob = new Blob([stringifyJson(translation())], {
+        const blob = new Blob([stringifyJson(translationLocale_content())], {
             type: "application/json",
         });
         const url = URL.createObjectURL(blob);
@@ -166,10 +175,10 @@ function HomePage(props: HomePageProps) {
 
     return (
         <main class="w-full grid grid-cols-[min-content_1fr_1fr] gap-4">
-            <div class="grid col-span-full grid-cols-subgrid border-b border-b-shallow-background pb-4 my-4">
+            <div class="grid col-span-full grid-cols-subgrid mt-4">
                 {/* File Selector */}
                 <div class="flex items-start justify-center flex-col gap-1 text-sm">
-                    <label for="select-file" class="font-mono text-muted-foreground">
+                    <label for="select-file" class="text-muted-foreground">
                         Translating
                     </label>
                     <Select
@@ -200,7 +209,7 @@ function HomePage(props: HomePageProps) {
 
                 {/* Ref Locale Selector */}
                 <div class="flex items-start justify-center flex-col gap-1 text-sm">
-                    <label for="select-ref-locale" class="font-mono text-muted-foreground">
+                    <label for="select-ref-locale" class="text-muted-foreground">
                         From
                     </label>
                     <Select
@@ -229,7 +238,7 @@ function HomePage(props: HomePageProps) {
 
                 {/* Translation locale selector */}
                 <div class="flex items-start justify-center flex-col gap-1 text-sm">
-                    <label for="translating-to" class="font-mono text-muted-foreground">
+                    <label for="translating-to" class="text-muted-foreground">
                         To
                     </label>
                     <Select
@@ -282,20 +291,41 @@ function HomePage(props: HomePageProps) {
                         </div>
                     }
                 >
+                    <div class="col-span-full border-b border-b-shallow-background pb-4">
+                        <Switch
+                            class="flex items-center space-x-2"
+                            checked={hideNonEmptyEntries().enabled}
+                            onChange={(checked) => {
+                                setHideNonEmptyEntries({
+                                    enabled: checked,
+                                    translationSnapshot: translationLocale_content() || {},
+                                });
+                            }}
+                        >
+                            <SwitchControl>
+                                <SwitchThumb />
+                            </SwitchControl>
+                            <SwitchLabel>Show empty entries only</SwitchLabel>
+                        </Switch>
+                    </div>
+
                     <div class="bg-card-background px-6 py-4 rounded-lg grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
                         <NestedInputRow
                             absoluteKey=""
                             valueRaw={refLocale_content()}
                             valueTranslated={translationLocale_content()}
+                            translationLocale_content={translationLocale_content()}
+                            setTranslationContent={setTranslationContent}
+                            hideNonEmptyEntries={hideNonEmptyEntries()}
                         />
                     </div>
 
                     <div class="col-span-full pb-16 flex flex-col gap-4">
-                        <TextFieldRoot class="">
+                        <TextFieldRoot>
                             <TextArea
                                 placeholder="Translated JSON"
                                 class="bg-card-background font-mono min-h-[80dvh] text-base"
-                                value={stringifyJson(translation())}
+                                value={stringifyJson(translationLocale_content())}
                                 spellcheck={false}
                                 onChange={handleTextareaChange}
                             />
@@ -323,22 +353,42 @@ interface NestedInputRowProps {
     valueRaw: JsonObject | undefined;
     valueTranslated: JsonObject | undefined;
     depth?: number;
+
+    translationLocale_content: JsonObject | undefined;
+    setTranslationContent: Setter<JsonObject | undefined>;
+    hideNonEmptyEntries: {
+        enabled: boolean;
+        translationSnapshot: JsonObject;
+    };
 }
 
 function NestedInputRow(props: NestedInputRowProps) {
     if (props.key && ["$schema"].includes(props.key)) return null;
 
     const depth = () => props.depth || 0;
+    const translationLocaleContent = () => props.translationLocale_content;
 
-    if (typeof props.valueRaw !== "object" || Array.isArray(props.valueRaw) || Array.isArray(props.valueTranslated)) {
+    if (
+        (typeof props.valueRaw === "string" || !props.valueRaw) &&
+        (typeof props.valueTranslated === "string" || !props.valueTranslated)
+    ) {
         return (
-            <InputRow
-                key={`${props.key}`}
-                absoluteKey={props.absoluteKey}
-                valueRaw={props.valueRaw || ""}
-                valueTranslated={props.valueTranslated || ""}
-                depth={depth()}
-            />
+            <Show
+                when={
+                    !props.hideNonEmptyEntries.enabled ||
+                    !getObjValue(props.hideNonEmptyEntries.translationSnapshot, props.absoluteKey.split("."))
+                }
+            >
+                <InputRow
+                    key={`${props.key}`}
+                    absoluteKey={props.absoluteKey}
+                    valueRaw={props.valueRaw || ""}
+                    valueTranslated={props.valueTranslated || ""}
+                    depth={depth()}
+                    translationLocale_content={translationLocaleContent()}
+                    setTranslationContent={props.setTranslationContent}
+                />
+            </Show>
         );
     }
 
@@ -394,6 +444,9 @@ function NestedInputRow(props: NestedInputRowProps) {
                                     valueTranslated={props.valueTranslated?.[key] as JsonObject}
                                     depth={depth() + 1}
                                     absoluteKey={!props.absoluteKey ? key : `${props.absoluteKey}.${key}`}
+                                    translationLocale_content={translationLocaleContent()}
+                                    hideNonEmptyEntries={props.hideNonEmptyEntries}
+                                    setTranslationContent={props.setTranslationContent}
                                 />
                             );
                         }}
@@ -407,23 +460,27 @@ function NestedInputRow(props: NestedInputRowProps) {
 interface InputRowProps {
     key: string;
     absoluteKey: string;
-    valueRaw: Json;
-    valueTranslated: Json;
+    valueRaw: string | undefined;
+    valueTranslated: string | undefined;
     depth: number;
-}
 
-type onInput_EventType = InputEvent & {
-    currentTarget: HTMLInputElement;
-};
+    translationLocale_content: JsonObject | undefined;
+    setTranslationContent: Setter<JsonObject | undefined>;
+}
 
 function InputRow(props: InputRowProps) {
     const depth = () => props.depth;
+    const translationLocaleContent = () => props.translationLocale_content;
 
-    function UpdateTranslation(e: onInput_EventType) {
+    function UpdateTranslation(e: { currentTarget: EventTarget & HTMLInputElement }) {
         const value = e.currentTarget.value;
 
-        const _translation = updateObject(translation() as JsonObject, props.absoluteKey.split("."), value);
-        setTranslation(_translation);
+        const _translation = updateObject(
+            translationLocaleContent() as JsonObject,
+            props.absoluteKey.split("."),
+            value,
+        );
+        props.setTranslationContent(_translation);
     }
 
     return (
@@ -437,13 +494,14 @@ function InputRow(props: InputRowProps) {
                 {props.key}
             </label>
 
-            <TextField value={stringify(props.valueRaw || "")} readOnly class="m-0" />
+            <TextField value={props.valueRaw || ""} readOnly class="m-0" tabIndex={-1} />
 
             <TextField
-                value={stringify(props.valueTranslated || "")}
                 id={`input-${props.absoluteKey}`}
                 spellcheck={false}
+                value={props.valueTranslated || ""}
                 onInput={UpdateTranslation}
+                // tabIndex={props.valueTranslated ? -1 : undefined}
             />
         </TextFieldRoot>
     );
@@ -470,26 +528,35 @@ function GetDirectoryFiles(dirs: Dir[], list: TranslationFileItem[], parent = ""
     }
 }
 
-function stringify(json: Json) {
-    let _str = JSON.stringify(json, null, 0);
-    if (_str.startsWith('"')) _str = _str.slice(1, -1);
-    if (Array.isArray(json)) _str = _str.replaceAll("\n", "");
-    return _str;
-}
+function updateObject(srcObj: JsonObject, targetKey: string[], value: Json, removeKeyOnFalsyVal = true): JsonObject {
+    const obj = { ...srcObj };
 
-function updateObject(obj: JsonObject, targetKey: string[], value: Json): Json {
     if (!targetKey.length) return obj;
-    if (targetKey.length === 1) {
-        return {
-            ...obj,
-            [targetKey[0]]: value,
-        };
+    if (!value && removeKeyOnFalsyVal) {
+        delete obj[targetKey[0]];
+        return obj;
     }
 
-    return {
-        ...obj,
-        [targetKey[0]]: updateObject(obj[targetKey[0]] as JsonObject, targetKey.slice(1), value),
-    };
+    if (targetKey.length === 1) {
+        obj[targetKey[0]] = value;
+    } else {
+        obj[targetKey[0]] = updateObject(obj[targetKey[0]] as JsonObject, targetKey.slice(1), value);
+    }
+
+    return obj;
+}
+
+function getObjValue(obj: JsonObject, keys: string[]) {
+    if (!keys.length) return null;
+
+    const val = obj[keys[0]];
+
+    if (keys.length === 1) return val;
+    else if (typeof val === "object") {
+        return getObjValue(val as JsonObject, keys.slice(1));
+    } else {
+        return null;
+    }
 }
 
 function ObjHasValues(obj: JsonObject | undefined) {
@@ -502,6 +569,6 @@ function ObjHasValues(obj: JsonObject | undefined) {
     }
 }
 
-function stringifyJson(json: Json) {
+function stringifyJson(json: Json | undefined) {
     return JSON.stringify(json, null, 4).replaceAll("\\\\", "\\");
 }

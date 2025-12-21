@@ -1,4 +1,3 @@
-import { cn } from "@/utils/cn";
 import type { ButtonRootProps } from "@kobalte/core/button";
 import { Button as ButtonPrimitive } from "@kobalte/core/button";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
@@ -6,6 +5,7 @@ import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 import type { ValidComponent } from "solid-js";
 import { splitProps } from "solid-js";
+import { cn } from "@/utils/cn";
 
 export const buttonVariants = cva(
     "inline-flex gap-x-2 items-center justify-center rounded cursor-pointer text-base font-medium transition-[color,background-color,box-shadow] focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-extra-muted-foreground disabled:pointer-events-none disabled:opacity-50",
