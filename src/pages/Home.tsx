@@ -78,7 +78,7 @@ function HomePage(props: HomePageProps) {
 
     const filesNames = () => {
         const list: TranslationFileItem[] = [];
-        GetDirectoryFiles(localeFiles(), list);
+        getDirectoryFiles(localeFiles(), list);
 
         return list;
     };
@@ -162,7 +162,7 @@ function HomePage(props: HomePageProps) {
         const value = e.currentTarget.value;
 
         try {
-            const _translation = JSON.parse(value.replaceAll("\\", "\\\\"));
+            const _translation = JSON.parse(value);
             setTranslationContent(_translation);
         } catch (e) {
             console.error(e);
@@ -416,7 +416,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                 <InputRow
                     key={`${props.key}`}
                     absoluteKey={props.absoluteKey}
-                    valueRaw={props.valueRefLocale}
+                    valueRef={props.valueRefLocale}
                     valueTranslated={props.valueTranslated}
                     depth={depth()}
                     translationLocale_content={translationLocaleContent()}
@@ -452,7 +452,7 @@ function NestedInputRow(props: NestedInputRowProps) {
         <Show
             when={
                 !props.hideNonEmptyEntries.enabled ||
-                hasEmptyValue(
+                hasMissingOrEmptyTranslation(
                     translationValue_fromSnapshot() as JsonObject,
                     props.valueRefLocale ?? {},
                 )
@@ -472,7 +472,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                         }
                     }}
                     style={{
-                        "padding-left": depth() > 1 ? `${(depth() - 1) * 2}rem` : undefined,
+                        "margin-left": depth() > 1 ? `${(depth() - 1) * 2}rem` : undefined,
                     }}
                 >
                     <ChevronDownIcon
@@ -487,7 +487,7 @@ function NestedInputRow(props: NestedInputRowProps) {
 
             <Show when={isExpanded()}>
                 <div
-                    class="grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2"
+                    class="grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2.5"
                     style={{
                         "padding-bottom": depth() === 0 ? "0" : "0.5rem",
                     }}
@@ -528,7 +528,7 @@ interface InputRowProps {
     key: ObjectKey;
     absoluteKey: ObjectKey[];
 
-    valueRaw: string | number | undefined;
+    valueRef: string | number | undefined;
     valueTranslated: string | number | undefined;
     depth: number;
 
@@ -541,7 +541,7 @@ function InputRow(props: InputRowProps) {
     const translationLocaleContent = () => props.translationLocale_content;
 
     function UpdateTranslation(e: { currentTarget: EventTarget & HTMLInputElement }) {
-        const value = e.currentTarget.value;
+        const value = unescapeCharacters(e.currentTarget.value);
 
         const _translation = updateObject(
             translationLocaleContent() || {},
@@ -562,15 +562,40 @@ function InputRow(props: InputRowProps) {
                 {props.key}
             </label>
 
-            <TextField value={props.valueRaw ?? ""} readOnly class="m-0" tabIndex={-1} />
+            <Show
+                when={(props.valueRef ?? "").toString().length <= 70}
+                fallback={
+                    <>
+                        <TextArea
+                            value={escapeCharacters(props.valueRef ?? "")}
+                            readOnly
+                            tabIndex={-1}
+                            class="min-h-10 self-stretch max-h-[24rem] resize-none field-sizing-content"
+                        />
 
-            <TextField
-                id={`input-${props.absoluteKey.join(".")}`}
-                spellcheck={false}
-                value={props.valueTranslated ?? ""}
-                onInput={UpdateTranslation}
-                // tabIndex={props.valueTranslated ? -1 : undefined}
-            />
+                        <TextArea
+                            value={escapeCharacters(props.valueTranslated ?? "")}
+                            onInput={UpdateTranslation}
+                            class="min-h-10 self-stretch max-h-[24rem] resize-none field-sizing-content"
+                        />
+                    </>
+                }
+            >
+                <TextField
+                    value={escapeCharacters(props.valueRef ?? "")}
+                    readOnly
+                    class="m-0"
+                    tabIndex={-1}
+                />
+
+                <TextField
+                    id={`input-${props.absoluteKey.join(".")}`}
+                    spellcheck={false}
+                    value={escapeCharacters(props.valueTranslated ?? "")}
+                    onInput={UpdateTranslation}
+                    // tabIndex={props.valueTranslated ? -1 : undefined}
+                />
+            </Show>
         </TextFieldRoot>
     );
 }
@@ -580,7 +605,7 @@ interface TranslationFileItem {
     path: string;
 }
 
-function GetDirectoryFiles(dirs: Dir[], list: TranslationFileItem[], parent = "") {
+function getDirectoryFiles(dirs: Dir[], list: TranslationFileItem[], parent = "") {
     for (let i = 0; i < dirs.length; i++) {
         const dir = dirs[i];
         if (dir.type === "file") {
@@ -591,7 +616,7 @@ function GetDirectoryFiles(dirs: Dir[], list: TranslationFileItem[], parent = ""
         }
 
         if (dir.files) {
-            GetDirectoryFiles(dir.files, list, `${parent}${dir.name}/`);
+            getDirectoryFiles(dir.files, list, `${parent}${dir.name}/`);
         }
     }
 }
@@ -681,7 +706,7 @@ function assembleObjectWithOrderedKeys(obj: JsonObject, ref: JsonObject): JsonOb
                 value as JsonObject,
                 refValue as JsonObject,
             );
-        } else {
+        } else if (value) {
             result[key] = value;
         }
     }
@@ -739,7 +764,7 @@ function ObjIsNonEmpty(obj: JsonObject | undefined) {
     }
 }
 
-function hasEmptyValue<T extends Json>(obj: T, refObj: T) {
+function hasMissingOrEmptyTranslation<T extends Json>(obj: T, refObj: T) {
     if (
         !obj ||
         !refObj ||
@@ -774,7 +799,7 @@ function hasEmptyValue<T extends Json>(obj: T, refObj: T) {
             typeof refEquiv === "object" &&
             !Array.isArray(refEquiv)
         ) {
-            if (hasEmptyValue(item, refEquiv)) return true;
+            if (hasMissingOrEmptyTranslation(item, refEquiv)) return true;
         }
     }
 
@@ -794,5 +819,32 @@ function getObjectKeys<T extends JsonObject | JsonArray>(obj: T): ObjectKey[] {
 }
 
 function stringifyJson(json: Json | undefined) {
-    return JSON.stringify(json, null, 4).replaceAll("\\\\", "\\");
+    return JSON.stringify(json, null, 4);
+}
+
+const ESCAPE_CHARS_MAP = [
+    // ["\\", "\\\\"],
+    ["\n", "\\n"],
+    ["\t", "\\t"],
+    ['"', '\\"'],
+];
+
+const ESCAPE_MAP: Record<string, string> = {};
+for (const entry of ESCAPE_CHARS_MAP) {
+    ESCAPE_MAP[entry[0]] = entry[1];
+}
+
+function escapeCharacters<T>(str: T) {
+    if (typeof str !== "string") return str;
+    return str.replace(/[\n\t"]/g, (char) => ESCAPE_MAP[char] ?? char);
+}
+
+const UNESCAPE_MAP: Record<string, string> = {};
+for (const entry of ESCAPE_CHARS_MAP) {
+    UNESCAPE_MAP[entry[1]] = entry[0];
+}
+
+function unescapeCharacters<T>(str: T) {
+    if (typeof str !== "string") return str;
+    return str.replace(/\\[nt"]/g, (seq) => UNESCAPE_MAP[seq] ?? seq);
 }

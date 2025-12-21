@@ -32,8 +32,8 @@
     --color-background: hsl(var(--bg-tint-hue), var(--bg-saturation), 8%);
     --color-card-background: hsl(var(--bg-tint-hue), var(--bg-saturation), 15%);
     --color-accent-background: hsl(var(--accent-color-hue), 85%, 62%);
-    --color-shallow-background: hsl(var(--bg-tint-hue), var(--bg-saturation), 24%);
-    --color-shallower-background: hsl(var(--bg-tint-hue), var(--bg-saturation), 32%);
+    --color-shallow-background: hsl(var(--bg-tint-hue), var(--bg-saturation), 21%);
+    --color-shallower-background: hsl(var(--bg-tint-hue), var(--bg-saturation), 28%);
     --color-danger-background: hsl(0, 92%, 65%);
     --color-danger-foreground: hsl(0, 91%, 71%);
     --color-warning-background: hsl(35, 74%, 48%);
