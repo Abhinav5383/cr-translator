@@ -2,7 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TextField, TextFieldRoot } from "@components/ui/text-field";
 import { useSearchParams } from "@solidjs/router";
 import ChevronDownIcon from "lucide-solid/icons/chevron-down";
-import { createEffect, createResource, createSignal, For, type Setter, Show } from "solid-js";
+import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { LoadSettings } from "@/components/layout/Settings";
 import { Button } from "@/components/ui/button";
 import { FullPageLoading } from "@/components/ui/loading";
@@ -12,6 +12,8 @@ import { cn } from "@/utils/cn";
 import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
 import type { Json, JsonObject } from "@/utils/types";
 import { loadSelections, NEW_LOCALE_ID, saveSelections } from "./local-db";
+
+const HIDDEN_KEYS = ["$schema"];
 
 const settings = LoadSettings();
 const repoPath = () => settings.repoPath;
@@ -44,12 +46,11 @@ function HomePage(props: HomePageProps) {
 
     const [hideNonEmptyEntries, setHideNonEmptyEntries] = createSignal({
         enabled: false,
+        // contains the state the translation when hideNonEmptyEntries was enabled
+        // this is needed because any input row will disappear as soon as anything is typed into it
+        // if we hide or show on the basis of live updating translation Object
         translationSnapshot: {} as JsonObject,
     });
-    // contains the state the translation when hideNonEmptyEntries was enabled
-    // this is needed because any input row will disappear as soon as anything is typed into it
-    // if we hide or show on the basis of original translation Object
-    // const [translationSnapshot, setTranslationSnapshot] = createSignal<JsonObject>({});
 
     if (!locales() || !localeFiles()) {
         return (
@@ -275,7 +276,7 @@ function HomePage(props: HomePageProps) {
                 }
             >
                 <Show
-                    when={ObjHasValues(refLocale_content())}
+                    when={ObjIsNonEmpty(refLocale_content())}
                     fallback={
                         <div class="col-span-full grid place-items-center py-12">
                             <p class="text-lg text-muted-foreground font-mono text-center">
@@ -312,7 +313,7 @@ function HomePage(props: HomePageProps) {
                     <div class="bg-card-background px-6 py-4 rounded-lg grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
                         <NestedInputRow
                             absoluteKey=""
-                            valueRaw={refLocale_content()}
+                            valueRefLocale={refLocale_content()}
                             valueTranslated={translationLocale_content()}
                             translationLocale_content={translationLocale_content()}
                             setTranslationContent={setTranslationContent}
@@ -350,12 +351,12 @@ function HomePage(props: HomePageProps) {
 interface NestedInputRowProps {
     absoluteKey: string;
     key?: string;
-    valueRaw: JsonObject | undefined;
+    valueRefLocale: JsonObject | undefined;
     valueTranslated: JsonObject | undefined;
     depth?: number;
 
     translationLocale_content: JsonObject | undefined;
-    setTranslationContent: Setter<JsonObject | undefined>;
+    setTranslationContent: (newVal: JsonObject) => void;
     hideNonEmptyEntries: {
         enabled: boolean;
         translationSnapshot: JsonObject;
@@ -363,13 +364,13 @@ interface NestedInputRowProps {
 }
 
 function NestedInputRow(props: NestedInputRowProps) {
-    if (props.key && ["$schema"].includes(props.key)) return null;
+    if (props.key && HIDDEN_KEYS.includes(props.key)) return null;
 
     const depth = () => props.depth || 0;
     const translationLocaleContent = () => props.translationLocale_content;
 
     if (
-        (typeof props.valueRaw === "string" || !props.valueRaw) &&
+        (typeof props.valueRefLocale === "string" || !props.valueRefLocale) &&
         (typeof props.valueTranslated === "string" || !props.valueTranslated)
     ) {
         return (
@@ -382,7 +383,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                 <InputRow
                     key={`${props.key}`}
                     absoluteKey={props.absoluteKey}
-                    valueRaw={props.valueRaw || ""}
+                    valueRaw={props.valueRefLocale || ""}
                     valueTranslated={props.valueTranslated || ""}
                     depth={depth()}
                     translationLocale_content={translationLocaleContent()}
@@ -393,7 +394,7 @@ function NestedInputRow(props: NestedInputRowProps) {
     }
 
     const [isExpanded, setIsExpanded] = createSignal<boolean>(true);
-    const keys_fromRaw = Object.keys(props.valueRaw || {});
+    const keys_fromRaw = Object.keys(props.valueRefLocale || {});
     const keys_fromTranslated = Object.keys(props.valueTranslated || {});
 
     const keys = Array.from(new Set(keys_fromRaw.concat(keys_fromTranslated)));
@@ -437,13 +438,15 @@ function NestedInputRow(props: NestedInputRowProps) {
                 >
                     <For each={keys}>
                         {(key) => {
+                            const absoluteKey = !props.absoluteKey ? key : `${props.absoluteKey}.${key}`;
+
                             return (
                                 <NestedInputRow
                                     key={key}
-                                    valueRaw={props.valueRaw?.[key] as JsonObject}
+                                    valueRefLocale={props.valueRefLocale?.[key] as JsonObject}
                                     valueTranslated={props.valueTranslated?.[key] as JsonObject}
                                     depth={depth() + 1}
-                                    absoluteKey={!props.absoluteKey ? key : `${props.absoluteKey}.${key}`}
+                                    absoluteKey={absoluteKey}
                                     translationLocale_content={translationLocaleContent()}
                                     hideNonEmptyEntries={props.hideNonEmptyEntries}
                                     setTranslationContent={props.setTranslationContent}
@@ -465,7 +468,7 @@ interface InputRowProps {
     depth: number;
 
     translationLocale_content: JsonObject | undefined;
-    setTranslationContent: Setter<JsonObject | undefined>;
+    setTranslationContent: (newVal: JsonObject) => void;
 }
 
 function InputRow(props: InputRowProps) {
@@ -547,9 +550,9 @@ function updateObject(srcObj: JsonObject, targetKey: string[], value: Json, remo
 }
 
 function getObjValue(obj: JsonObject, keys: string[]) {
-    if (!keys.length) return null;
+    if (!keys.length) return obj;
 
-    const val = obj[keys[0]];
+    const val = keys[0].length ? obj[keys[0]] : obj;
 
     if (keys.length === 1) return val;
     else if (typeof val === "object") {
@@ -559,7 +562,7 @@ function getObjValue(obj: JsonObject, keys: string[]) {
     }
 }
 
-function ObjHasValues(obj: JsonObject | undefined) {
+function ObjIsNonEmpty(obj: JsonObject | undefined) {
     if (!obj) return false;
 
     try {
