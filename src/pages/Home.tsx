@@ -8,7 +8,7 @@ import {
 import { TextField, TextFieldRoot } from "@components/ui/text-field";
 import { useSearchParams } from "@solidjs/router";
 import ChevronDownIcon from "lucide-solid/icons/chevron-down";
-import { createEffect, createResource, createSignal, For, Show } from "solid-js";
+import { createResource, createSignal, For, Show } from "solid-js";
 import { LoadSettings } from "@/components/layout/Settings";
 import { Button } from "@/components/ui/button";
 import { FullPageLoading } from "@/components/ui/loading";
@@ -17,39 +17,46 @@ import { TextArea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
 import type { Json, JsonArray, JsonObject } from "@/utils/types";
-import { loadSelections, NEW_LOCALE_ID, saveSelections } from "./local-db";
 
 const HIDDEN_KEYS: ObjectKey[] = ["$schema"];
 
-const settings = LoadSettings();
-const repoPath = () => settings.repoPath;
-const langDir = () => settings.langPath;
+export const NEW_LOCALE_ID = "New Locale";
+const DEFAULT_SELECTIONS = {
+    file: "game.json",
+    refLocale: "en_us",
+    translationLocale: NEW_LOCALE_ID,
+};
 
 export function HomePage_Wrapper() {
-    const dep = () => ({ repoPath: repoPath(), langDir: langDir() });
+    const settings = LoadSettings();
 
-    const [locales] = createResource(dep, () => getLocales(repoPath(), langDir()));
-    const [localeFiles] = createResource(dep, () => getFilesPerLocale(repoPath(), langDir()));
+    const dep = () => ({ repoPath: settings.repoPath, langDir: settings.langPath });
+
+    const [locales] = createResource(dep, () => getLocales(settings.repoPath, settings.langPath));
+    const [localeFiles] = createResource(dep, () =>
+        getFilesPerLocale(settings.repoPath, settings.langPath),
+    );
 
     return (
         <Show when={locales() && localeFiles()}>
-            <HomePage locales={locales()} localeFiles={localeFiles()} />
+            <HomePage locales={locales()} localeFiles={localeFiles()} settings={settings} />
         </Show>
     );
 }
 
 interface HomePageProps {
+    settings: ReturnType<typeof LoadSettings>;
     locales: Dir[] | undefined;
     localeFiles: Dir[] | undefined;
 }
 
 function HomePage(props: HomePageProps) {
+    const repoPath = () => props.settings.repoPath;
+    const langDir = () => props.settings.langPath;
     const locales = () => props.locales || [];
     const localeFiles = () => props.localeFiles || [];
 
-    const savedSelections = () => loadSelections();
     const [searchParams, setSearchParams] = useSearchParams();
-
     const [hideNonEmptyEntries, setHideNonEmptyEntries] = createSignal({
         enabled: false,
         // contains the state the translation when hideNonEmptyEntries was enabled
@@ -79,7 +86,8 @@ function HomePage(props: HomePageProps) {
     // File and locale selections
     const selectedLocaleFile = () => {
         if (searchParams.file) return searchParams.file as string;
-        return savedSelections().file;
+
+        return DEFAULT_SELECTIONS.file;
     };
     function setSelectedLocaleFile(file: string) {
         setSearchParams({
@@ -90,7 +98,7 @@ function HomePage(props: HomePageProps) {
     // Selection values
     const selectedRefLocale = () => {
         if (searchParams.ref_locale) return searchParams.ref_locale as string;
-        return savedSelections().refLocale;
+        return DEFAULT_SELECTIONS.refLocale;
     };
     function setSelectedRefLocale(locale: string) {
         setSearchParams({
@@ -100,22 +108,13 @@ function HomePage(props: HomePageProps) {
 
     const selectedTranslationLocale = () => {
         if (searchParams.translation_locale) return searchParams.translation_locale as string;
-        return savedSelections().translationLocale;
+        return DEFAULT_SELECTIONS.translationLocale;
     };
     function setSelectedTranslationLocale(locale: string) {
         setSearchParams({
             translation_locale: locale,
         });
     }
-
-    // Save the selections to local storage when they change
-    createEffect(() => {
-        saveSelections({
-            file: selectedLocaleFile(),
-            refLocale: selectedRefLocale(),
-            translationLocale: selectedTranslationLocale(),
-        });
-    });
 
     // Deps
     const refLocale_deps = () => ({
