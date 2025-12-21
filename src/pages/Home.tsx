@@ -10,10 +10,10 @@ import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from "@/components/ui
 import { TextArea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { type Dir, getFilesPerLocale, getLocaleFileContents, getLocales } from "@/utils/gh-api";
-import type { Json, JsonObject } from "@/utils/types";
+import type { Json, JsonArray, JsonObject } from "@/utils/types";
 import { loadSelections, NEW_LOCALE_ID, saveSelections } from "./local-db";
 
-const HIDDEN_KEYS = ["$schema"];
+const HIDDEN_KEYS: ObjectKey[] = ["$schema"];
 
 const settings = LoadSettings();
 const repoPath = () => settings.repoPath;
@@ -316,7 +316,7 @@ function HomePage(props: HomePageProps) {
 
                     <div class="bg-card-background px-6 py-4 rounded-lg grid col-span-full grid-cols-subgrid content-start font-mono gap-x-4 gap-y-2">
                         <NestedInputRow
-                            absoluteKey=""
+                            absoluteKey={[]}
                             valueRefLocale={refLocale_content()}
                             valueTranslated={translationLocale_content()}
                             translationLocale_content={translationLocale_content()}
@@ -352,11 +352,13 @@ function HomePage(props: HomePageProps) {
     );
 }
 
+type ObjectKey = number | string;
+
 interface NestedInputRowProps {
-    absoluteKey: string;
-    key?: string;
-    valueRefLocale: JsonObject | undefined;
-    valueTranslated: JsonObject | undefined;
+    absoluteKey: ObjectKey[];
+    key?: ObjectKey;
+    valueRefLocale: JsonObject | JsonArray | undefined;
+    valueTranslated: JsonObject | JsonArray | undefined;
     depth?: number;
 
     translationLocale_content: JsonObject | undefined;
@@ -374,14 +376,18 @@ function NestedInputRow(props: NestedInputRowProps) {
     const translationLocaleContent = () => props.translationLocale_content;
 
     if (
-        (typeof props.valueRefLocale === "string" || !props.valueRefLocale) &&
-        (typeof props.valueTranslated === "string" || !props.valueTranslated)
+        (typeof props.valueRefLocale === "string" ||
+            typeof props.valueRefLocale === "number" ||
+            !props.valueRefLocale) &&
+        (typeof props.valueTranslated === "string" ||
+            typeof props.valueTranslated === "number" ||
+            !props.valueTranslated)
     ) {
         return (
             <Show
                 when={
                     !props.hideNonEmptyEntries.enabled ||
-                    !getObjValue(props.hideNonEmptyEntries.translationSnapshot, props.absoluteKey.split("."))
+                    !getNestedObjectValue(props.hideNonEmptyEntries.translationSnapshot, props.absoluteKey)
                 }
             >
                 <InputRow
@@ -398,10 +404,13 @@ function NestedInputRow(props: NestedInputRowProps) {
     }
 
     const [isExpanded, setIsExpanded] = createSignal<boolean>(true);
-    const keys_fromRaw = Object.keys(props.valueRefLocale || {});
-    const keys_fromTranslated = Object.keys(props.valueTranslated || {});
 
-    const keys = Array.from(new Set(keys_fromRaw.concat(keys_fromTranslated)));
+    const keys = () => {
+        const keys_fromRefLocale = getObjectKeys(props.valueRefLocale || {});
+        const keys_fromTranslated = getObjectKeys(props.valueTranslated || {});
+
+        return Array.from(new Set(keys_fromRefLocale.concat(keys_fromTranslated)));
+    };
 
     function toggleExpanded() {
         setIsExpanded(!isExpanded());
@@ -409,7 +418,7 @@ function NestedInputRow(props: NestedInputRowProps) {
 
     return (
         <>
-            <Show when={(props.key?.length || 0) > 0}>
+            <Show when={props.key !== undefined}>
                 <button
                     type="button"
                     class={cn(
@@ -421,6 +430,9 @@ function NestedInputRow(props: NestedInputRowProps) {
                         if (e.key === "Enter") {
                             toggleExpanded();
                         }
+                    }}
+                    style={{
+                        "padding-left": depth() > 1 ? `${(depth() - 1) * 2}rem` : undefined,
                     }}
                 >
                     <ChevronDownIcon
@@ -440,15 +452,19 @@ function NestedInputRow(props: NestedInputRowProps) {
                         "padding-bottom": depth() === 0 ? "0" : "0.5rem",
                     }}
                 >
-                    <For each={keys}>
+                    <For each={keys()}>
                         {(key) => {
-                            const absoluteKey = !props.absoluteKey ? key : `${props.absoluteKey}.${key}`;
+                            const absoluteKey = [...props.absoluteKey, key];
 
                             return (
                                 <NestedInputRow
                                     key={key}
-                                    valueRefLocale={props.valueRefLocale?.[key] as JsonObject}
-                                    valueTranslated={props.valueTranslated?.[key] as JsonObject}
+                                    valueRefLocale={
+                                        getNestedObjectValue(props.valueRefLocale || {}, [key]) as JsonObject
+                                    }
+                                    valueTranslated={
+                                        getNestedObjectValue(props.valueTranslated || {}, [key]) as JsonObject
+                                    }
                                     depth={depth() + 1}
                                     absoluteKey={absoluteKey}
                                     translationLocale_content={translationLocaleContent()}
@@ -465,10 +481,11 @@ function NestedInputRow(props: NestedInputRowProps) {
 }
 
 interface InputRowProps {
-    key: string;
-    absoluteKey: string;
-    valueRaw: string | undefined;
-    valueTranslated: string | undefined;
+    key: ObjectKey;
+    absoluteKey: ObjectKey[];
+
+    valueRaw: string | number | undefined;
+    valueTranslated: string | number | undefined;
     depth: number;
 
     translationLocale_content: JsonObject | undefined;
@@ -482,11 +499,7 @@ function InputRow(props: InputRowProps) {
     function UpdateTranslation(e: { currentTarget: EventTarget & HTMLInputElement }) {
         const value = e.currentTarget.value;
 
-        const _translation = updateObject(
-            translationLocaleContent() as JsonObject,
-            props.absoluteKey.split("."),
-            value,
-        );
+        const _translation = updateObject(translationLocaleContent() || {}, props.absoluteKey, value);
         props.setTranslationContent(_translation);
     }
 
@@ -497,14 +510,14 @@ function InputRow(props: InputRowProps) {
                 "padding-left": depth() > 1 ? `${(depth() - 1) * 2}rem` : undefined,
             }}
         >
-            <label class="text-muted-foreground" for={`input-${props.absoluteKey}`}>
+            <label class="text-muted-foreground" for={`input-${props.absoluteKey.join(".")}`}>
                 {props.key}
             </label>
 
             <TextField value={props.valueRaw || ""} readOnly class="m-0" tabIndex={-1} />
 
             <TextField
-                id={`input-${props.absoluteKey}`}
+                id={`input-${props.absoluteKey.join(".")}`}
                 spellcheck={false}
                 value={props.valueTranslated || ""}
                 onInput={UpdateTranslation}
@@ -535,35 +548,131 @@ function GetDirectoryFiles(dirs: Dir[], list: TranslationFileItem[], parent = ""
     }
 }
 
-function updateObject(srcObj: JsonObject, targetKey: string[], value: Json, removeKeyOnFalsyVal = true): JsonObject {
-    const obj = { ...srcObj };
+function updateObject<T extends JsonObject | JsonArray>(
+    srcObj: T,
+    keys: ObjectKey[],
+    value: Json,
+    removeKeyOnFalsyVal = true,
+): T {
+    if (keys.length === 0) return srcObj;
+    const isValueAbsent = value === undefined || value === null || value === "";
 
-    if (!targetKey.length) return obj;
-    if (!value && removeKeyOnFalsyVal) {
-        delete obj[targetKey[0]];
-        return obj;
+    // clone root
+    const root = Array.isArray(srcObj) ? [...srcObj] : { ...srcObj };
+    let temp: JsonObject | JsonArray = root;
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        const next = getNestedObjectValue(temp, [key]);
+        let clonedNext: JsonObject | JsonArray;
+
+        if (Array.isArray(next)) {
+            clonedNext = [...next];
+        } else if (next && typeof next === "object") {
+            clonedNext = { ...next };
+        } else {
+            // create missing container
+            const nextKey = keys[i + 1];
+            clonedNext = typeof nextKey === "number" || Number.isInteger(Number(nextKey)) ? [] : {};
+        }
+
+        // attach clone
+        if (Array.isArray(temp)) {
+            const index = typeof key === "number" ? key : Number.parseInt(key, 10);
+            if (!Number.isInteger(index)) throw new Error(`updateObject: Invalid array index: ${index}`);
+            temp[index] = clonedNext;
+        } else {
+            temp[key] = clonedNext;
+        }
+
+        temp = clonedNext;
     }
 
-    if (targetKey.length === 1) {
-        obj[targetKey[0]] = value;
+    // biome-ignore lint/style/noNonNullAssertion: should never be null
+    const lastKey = keys.at(-1)!;
+
+    if (Array.isArray(temp)) {
+        const index = typeof lastKey === "number" ? lastKey : Number.parseInt(lastKey, 10);
+        if (!Number.isInteger(index)) throw new Error(`updateObject: Invalid array index: ${index}`);
+
+        if (removeKeyOnFalsyVal && isValueAbsent) {
+            temp.splice(index, 1);
+        } else {
+            temp[index] = value;
+        }
     } else {
-        obj[targetKey[0]] = updateObject(obj[targetKey[0]] as JsonObject, targetKey.slice(1), value);
+        if (removeKeyOnFalsyVal && isValueAbsent) {
+            delete temp[lastKey];
+        } else {
+            temp[lastKey] = value;
+        }
     }
 
-    return obj;
+    return root as T;
 }
 
-function getObjValue(obj: JsonObject, keys: string[]) {
-    if (!keys.length) return obj;
+function assembleObjectWithOrderedKeys(obj: JsonObject, ref: JsonObject): JsonObject {
+    const result: JsonObject = {};
 
-    const val = keys[0].length ? obj[keys[0]] : obj;
+    // First, follow ref's key order
+    for (const key of Object.keys(ref)) {
+        const value = getObjectItem(obj, key);
+        const refValue = getObjectItem(ref, key);
 
-    if (keys.length === 1) return val;
-    else if (typeof val === "object") {
-        return getObjValue(val as JsonObject, keys.slice(1));
-    } else {
-        return null;
+        if (
+            value &&
+            refValue &&
+            typeof value === "object" &&
+            typeof refValue === "object" &&
+            !Array.isArray(value) &&
+            !Array.isArray(refValue)
+        ) {
+            result[key] = assembleObjectWithOrderedKeys(value as JsonObject, refValue as JsonObject);
+        } else {
+            result[key] = value;
+        }
     }
+
+    // Then, append keys that exist only in obj
+    for (const key of Object.keys(obj)) {
+        if (!(key in ref)) {
+            result[key] = obj[key];
+        }
+    }
+
+    return result;
+}
+
+function getNestedObjectValue(obj: JsonObject | JsonArray, keys: ObjectKey[]) {
+    let result: Json = obj;
+
+    for (const key of keys) {
+        if (Array.isArray(result)) {
+            result = getArrayItem(result, key);
+        } else if (result && typeof result === "object") {
+            result = getObjectItem(result, key);
+        } else {
+            throw new Error(":)");
+        }
+    }
+
+    return result;
+}
+
+function getArrayItem<T>(arr: T[], key: ObjectKey) {
+    if (key === undefined || key === null) throw new Error(`getArrayItem: Got invalid key: ${key}`);
+
+    if (typeof key === "number") return arr[key];
+
+    const index = Number.parseInt(key, 10);
+    if (!Number.isInteger(index)) throw new Error(`getArrayItem: Got invalid index: ${key}`);
+
+    return arr[index];
+}
+
+function getObjectItem<T>(obj: Record<ObjectKey, T>, key: ObjectKey) {
+    if (key === undefined || key === null) throw new Error(`getObjectItem: Got invalid key: ${key}`);
+    return obj[key];
 }
 
 function ObjIsNonEmpty(obj: JsonObject | undefined) {
@@ -576,25 +685,18 @@ function ObjIsNonEmpty(obj: JsonObject | undefined) {
     }
 }
 
-function stringifyJson(json: Json | undefined) {
-    return JSON.stringify(json, null, 4).replaceAll("\\\\", "\\");
+function getObjectKeys<T extends JsonObject | JsonArray>(obj: T): ObjectKey[] {
+    if (Array.isArray(obj)) {
+        const keys: number[] = [];
+        for (let i = 0; i < obj.length; i++) {
+            keys.push(i);
+        }
+        return keys;
+    } else {
+        return Object.keys(obj);
+    }
 }
 
-function assembleObjectWithOrderedKeys(obj: JsonObject, ref: JsonObject): JsonObject {
-    if (!ref) return obj;
-
-    const newObj: JsonObject = {};
-
-    for (const key of Object.keys(ref)) {
-        const keyValue = obj[key];
-        const refValue = ref[key];
-
-        if (typeof keyValue === "object" && typeof refValue === "object") {
-            newObj[key] = assembleObjectWithOrderedKeys(keyValue as JsonObject, refValue as JsonObject);
-        } else {
-            newObj[key] = keyValue;
-        }
-    }
-
-    return newObj;
+function stringifyJson(json: Json | undefined) {
+    return JSON.stringify(json, null, 4).replaceAll("\\\\", "\\");
 }
