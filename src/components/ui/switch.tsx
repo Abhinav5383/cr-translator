@@ -13,7 +13,9 @@ type SwitchControlProps = SwitchPrimitive.SwitchControlProps & {
     children?: JSX.Element;
 };
 
-const SwitchControl = <T extends ValidComponent = "input">(props: PolymorphicProps<T, SwitchControlProps>) => {
+const SwitchControl = <T extends ValidComponent = "input">(
+    props: PolymorphicProps<T, SwitchControlProps>,
+) => {
     const [local, others] = splitProps(props as SwitchControlProps, ["class", "children"]);
     return (
         <>
@@ -38,7 +40,9 @@ const SwitchControl = <T extends ValidComponent = "input">(props: PolymorphicPro
 
 type SwitchThumbProps = SwitchPrimitive.SwitchThumbProps & { class?: string | undefined };
 
-const SwitchThumb = <T extends ValidComponent = "div">(props: PolymorphicProps<T, SwitchThumbProps>) => {
+const SwitchThumb = <T extends ValidComponent = "div">(
+    props: PolymorphicProps<T, SwitchThumbProps>,
+) => {
     const [local, others] = splitProps(props as SwitchThumbProps, ["class"]);
     return (
         <SwitchPrimitive.Thumb
@@ -53,7 +57,9 @@ const SwitchThumb = <T extends ValidComponent = "div">(props: PolymorphicProps<T
 
 type SwitchLabelProps = SwitchPrimitive.SwitchLabelProps & { class?: string | undefined };
 
-const SwitchLabel = <T extends ValidComponent = "label">(props: PolymorphicProps<T, SwitchLabelProps>) => {
+const SwitchLabel = <T extends ValidComponent = "label">(
+    props: PolymorphicProps<T, SwitchLabelProps>,
+) => {
     const [local, others] = splitProps(props as SwitchLabelProps, ["class"]);
     return (
         <SwitchPrimitive.Label

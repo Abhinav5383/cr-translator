@@ -31,8 +31,13 @@
         }
     },
     "formatter": {
-        "lineWidth": 120,
+        "lineWidth": 100,
         "indentWidth": 4,
         "indentStyle": "space"
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
+        }
     }
 }

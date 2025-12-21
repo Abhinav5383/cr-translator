@@ -1,5 +1,9 @@
 import { cn } from "@/utils/cn";
-import type { DialogContentProps, DialogDescriptionProps, DialogTitleProps } from "@kobalte/core/dialog";
+import type {
+    DialogContentProps,
+    DialogDescriptionProps,
+    DialogTitleProps,
+} from "@kobalte/core/dialog";
 import { Dialog as DialogPrimitive } from "@kobalte/core/dialog";
 import type { PolymorphicProps } from "@kobalte/core/polymorphic";
 import type { ComponentProps, ParentProps, ValidComponent } from "solid-js";
@@ -14,7 +18,9 @@ type dialogContentProps<T extends ValidComponent = "div"> = ParentProps<
     }
 >;
 
-export const DialogContent = <T extends ValidComponent = "div">(props: PolymorphicProps<T, dialogContentProps<T>>) => {
+export const DialogContent = <T extends ValidComponent = "div">(
+    props: PolymorphicProps<T, dialogContentProps<T>>,
+) => {
     const [local, rest] = splitProps(props as dialogContentProps, ["class", "children"]);
 
     return (
@@ -56,30 +62,54 @@ type dialogTitleProps<T extends ValidComponent = "h2"> = DialogTitleProps<T> & {
     class?: string;
 };
 
-export const DialogTitle = <T extends ValidComponent = "h2">(props: PolymorphicProps<T, dialogTitleProps<T>>) => {
+export const DialogTitle = <T extends ValidComponent = "h2">(
+    props: PolymorphicProps<T, dialogTitleProps<T>>,
+) => {
     const [local, rest] = splitProps(props as dialogTitleProps, ["class"]);
 
-    return <DialogPrimitive.Title class={cn("text-lg font-semibold text-foreground", local.class)} {...rest} />;
+    return (
+        <DialogPrimitive.Title
+            class={cn("text-lg font-semibold text-foreground", local.class)}
+            {...rest}
+        />
+    );
 };
 
 type dialogDescriptionProps<T extends ValidComponent = "p"> = DialogDescriptionProps<T> & {
     class?: string;
 };
 
-export const DialogDescription = <T extends ValidComponent = "p">(props: PolymorphicProps<T, dialogDescriptionProps<T>>) => {
+export const DialogDescription = <T extends ValidComponent = "p">(
+    props: PolymorphicProps<T, dialogDescriptionProps<T>>,
+) => {
     const [local, rest] = splitProps(props as dialogDescriptionProps, ["class"]);
 
-    return <DialogPrimitive.Description class={cn("text-sm text-muted-foreground", local.class)} {...rest} />;
+    return (
+        <DialogPrimitive.Description
+            class={cn("text-sm text-muted-foreground", local.class)}
+            {...rest}
+        />
+    );
 };
 
 export const DialogHeader = (props: ComponentProps<"div">) => {
     const [local, rest] = splitProps(props, ["class"]);
 
-    return <div class={cn("flex flex-col space-y-2 text-center sm:text-left", local.class)} {...rest} />;
+    return (
+        <div
+            class={cn("flex flex-col space-y-2 text-center sm:text-left", local.class)}
+            {...rest}
+        />
+    );
 };
 
 export const DialogFooter = (props: ComponentProps<"div">) => {
     const [local, rest] = splitProps(props, ["class"]);
 
-    return <div class={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", local.class)} {...rest} />;
+    return (
+        <div
+            class={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", local.class)}
+            {...rest}
+        />
+    );
 };

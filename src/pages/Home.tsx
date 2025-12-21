@@ -1,4 +1,10 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@components/ui/select";
 import { TextField, TextFieldRoot } from "@components/ui/text-field";
 import { useSearchParams } from "@solidjs/router";
 import ChevronDownIcon from "lucide-solid/icons/chevron-down";
@@ -56,7 +62,8 @@ function HomePage(props: HomePageProps) {
         return (
             <div class="w-full p-12 flex items-center justify-center">
                 <p class="text-md font-bold text-danger-foreground">
-                    Unable to fetch locale data from GitHub! Please check the console for error details.
+                    Unable to fetch locale data from GitHub! Please check the console for error
+                    details.
                 </p>
             </div>
         );
@@ -124,7 +131,10 @@ function HomePage(props: HomePageProps) {
 
     const [refLocale_content] = createResource(refLocale_deps, () => {
         if (!selectedRefLocale() || !selectedLocaleFile()) return;
-        return getLocaleFileContents(repoPath(), `${langDir()}/${selectedRefLocale()}/${selectedLocaleFile()}`);
+        return getLocaleFileContents(
+            repoPath(),
+            `${langDir()}/${selectedRefLocale()}/${selectedLocaleFile()}`,
+        );
     });
 
     const [translationLocale_content, { mutate: mutateTranslationContent }] = createResource(
@@ -272,7 +282,10 @@ function HomePage(props: HomePageProps) {
             </div>
 
             <Show
-                when={refLocale_content.state === "ready" && translationLocale_content.state === "ready"}
+                when={
+                    refLocale_content.state === "ready" &&
+                    translationLocale_content.state === "ready"
+                }
                 fallback={
                     <div class="col-span-full">
                         <FullPageLoading />
@@ -327,8 +340,9 @@ function HomePage(props: HomePageProps) {
 
                     <div class="col-span-full pb-16 flex flex-col gap-4">
                         <p class="mt-8">
-                            <em>Note:</em> You can use this TextArea to add custom keys that the editor doesn't have.
-                            The editor will be updated to reflect the changes you made :)
+                            <em>Note:</em> You can use this TextArea to add custom keys that the
+                            editor doesn't have. The editor will be updated to reflect the changes
+                            you made :)
                         </p>
                         <TextFieldRoot>
                             <TextArea
@@ -341,7 +355,10 @@ function HomePage(props: HomePageProps) {
                         </TextFieldRoot>
 
                         <div class="col-span-full flex items-center justify-end gap-3">
-                            <Button onClick={downloadJson} title={`Download translated ${selectedLocaleFile()}`}>
+                            <Button
+                                onClick={downloadJson}
+                                title={`Download translated ${selectedLocaleFile()}`}
+                            >
                                 Download
                             </Button>
 
@@ -391,7 +408,10 @@ function NestedInputRow(props: NestedInputRowProps) {
             <Show
                 when={
                     !props.hideNonEmptyEntries.enabled ||
-                    !getNestedObjectValue(props.hideNonEmptyEntries.translationSnapshot, props.absoluteKey)
+                    !getNestedObjectValue(
+                        props.hideNonEmptyEntries.translationSnapshot,
+                        props.absoluteKey,
+                    )
                 }
             >
                 <InputRow
@@ -421,14 +441,22 @@ function NestedInputRow(props: NestedInputRowProps) {
     }
 
     const translationValue_fromSnapshot = () => {
-        return getNestedObjectValue(props.hideNonEmptyEntries.translationSnapshot, props.absoluteKey) ?? {};
+        return (
+            getNestedObjectValue(
+                props.hideNonEmptyEntries.translationSnapshot,
+                props.absoluteKey,
+            ) ?? {}
+        );
     };
 
     return (
         <Show
             when={
                 !props.hideNonEmptyEntries.enabled ||
-                hasEmptyValue(translationValue_fromSnapshot() as JsonObject, props.valueRefLocale ?? {})
+                hasEmptyValue(
+                    translationValue_fromSnapshot() as JsonObject,
+                    props.valueRefLocale ?? {},
+                )
             }
         >
             <Show when={props.key !== undefined}>
@@ -473,10 +501,14 @@ function NestedInputRow(props: NestedInputRowProps) {
                                 <NestedInputRow
                                     key={key}
                                     valueRefLocale={
-                                        getNestedObjectValue(props.valueRefLocale ?? {}, [key]) as JsonObject
+                                        getNestedObjectValue(props.valueRefLocale ?? {}, [
+                                            key,
+                                        ]) as JsonObject
                                     }
                                     valueTranslated={
-                                        getNestedObjectValue(props.valueTranslated ?? {}, [key]) as JsonObject
+                                        getNestedObjectValue(props.valueTranslated ?? {}, [
+                                            key,
+                                        ]) as JsonObject
                                     }
                                     depth={depth() + 1}
                                     absoluteKey={absoluteKey}
@@ -512,7 +544,11 @@ function InputRow(props: InputRowProps) {
     function UpdateTranslation(e: { currentTarget: EventTarget & HTMLInputElement }) {
         const value = e.currentTarget.value;
 
-        const _translation = updateObject(translationLocaleContent() || {}, props.absoluteKey, value);
+        const _translation = updateObject(
+            translationLocaleContent() || {},
+            props.absoluteKey,
+            value,
+        );
         props.setTranslationContent(_translation);
     }
 
@@ -592,7 +628,8 @@ function updateObject<T extends JsonObject | JsonArray>(
         // attach clone
         if (Array.isArray(temp)) {
             const index = typeof key === "number" ? key : Number.parseInt(key, 10);
-            if (!Number.isInteger(index)) throw new Error(`updateObject: Invalid array index: ${index}`);
+            if (!Number.isInteger(index))
+                throw new Error(`updateObject: Invalid array index: ${index}`);
             temp[index] = clonedNext;
         } else {
             temp[key] = clonedNext;
@@ -606,7 +643,8 @@ function updateObject<T extends JsonObject | JsonArray>(
 
     if (Array.isArray(temp)) {
         const index = typeof lastKey === "number" ? lastKey : Number.parseInt(lastKey, 10);
-        if (!Number.isInteger(index)) throw new Error(`updateObject: Invalid array index: ${index}`);
+        if (!Number.isInteger(index))
+            throw new Error(`updateObject: Invalid array index: ${index}`);
 
         if (removeKeyOnFalsyVal && isValueAbsent) {
             temp.splice(index, 1);
@@ -640,7 +678,10 @@ function assembleObjectWithOrderedKeys(obj: JsonObject, ref: JsonObject): JsonOb
             !Array.isArray(value) &&
             !Array.isArray(refValue)
         ) {
-            result[key] = assembleObjectWithOrderedKeys(value as JsonObject, refValue as JsonObject);
+            result[key] = assembleObjectWithOrderedKeys(
+                value as JsonObject,
+                refValue as JsonObject,
+            );
         } else {
             result[key] = value;
         }
@@ -684,7 +725,8 @@ function getArrayItem<T>(arr: T[], key: ObjectKey) {
 }
 
 function getObjectItem<T>(obj: Record<ObjectKey, T>, key: ObjectKey) {
-    if (key === undefined || key === null) throw new Error(`getObjectItem: Got invalid key: ${key}`);
+    if (key === undefined || key === null)
+        throw new Error(`getObjectItem: Got invalid key: ${key}`);
     return obj[key];
 }
 

@@ -1,5 +1,12 @@
 import { Button } from "@components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@components/ui/dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@components/ui/dialog";
 import { TextField, TextFieldLabel, TextFieldRoot } from "@components/ui/text-field";
 import type { DialogTriggerProps } from "@kobalte/core/dialog";
 
