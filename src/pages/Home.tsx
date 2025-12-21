@@ -326,6 +326,10 @@ function HomePage(props: HomePageProps) {
                     </div>
 
                     <div class="col-span-full pb-16 flex flex-col gap-4">
+                        <p class="mt-8">
+                            <em>Note:</em> You can use this TextArea to add custom keys that the editor doesn't have.
+                            The editor will be updated to reflect the changes you made :)
+                        </p>
                         <TextFieldRoot>
                             <TextArea
                                 placeholder="Translated JSON"
@@ -393,8 +397,8 @@ function NestedInputRow(props: NestedInputRowProps) {
                 <InputRow
                     key={`${props.key}`}
                     absoluteKey={props.absoluteKey}
-                    valueRaw={props.valueRefLocale || ""}
-                    valueTranslated={props.valueTranslated || ""}
+                    valueRaw={props.valueRefLocale}
+                    valueTranslated={props.valueTranslated}
                     depth={depth()}
                     translationLocale_content={translationLocaleContent()}
                     setTranslationContent={props.setTranslationContent}
@@ -406,8 +410,8 @@ function NestedInputRow(props: NestedInputRowProps) {
     const [isExpanded, setIsExpanded] = createSignal<boolean>(true);
 
     const keys = () => {
-        const keys_fromRefLocale = getObjectKeys(props.valueRefLocale || {});
-        const keys_fromTranslated = getObjectKeys(props.valueTranslated || {});
+        const keys_fromRefLocale = getObjectKeys(props.valueRefLocale ?? {});
+        const keys_fromTranslated = getObjectKeys(props.valueTranslated ?? {});
 
         return Array.from(new Set(keys_fromRefLocale.concat(keys_fromTranslated)));
     };
@@ -416,8 +420,17 @@ function NestedInputRow(props: NestedInputRowProps) {
         setIsExpanded(!isExpanded());
     }
 
+    const translationValue_fromSnapshot = () => {
+        return getNestedObjectValue(props.hideNonEmptyEntries.translationSnapshot, props.absoluteKey) ?? {};
+    };
+
     return (
-        <>
+        <Show
+            when={
+                !props.hideNonEmptyEntries.enabled ||
+                hasEmptyValue(translationValue_fromSnapshot() as JsonObject, props.valueRefLocale ?? {})
+            }
+        >
             <Show when={props.key !== undefined}>
                 <button
                     type="button"
@@ -460,10 +473,10 @@ function NestedInputRow(props: NestedInputRowProps) {
                                 <NestedInputRow
                                     key={key}
                                     valueRefLocale={
-                                        getNestedObjectValue(props.valueRefLocale || {}, [key]) as JsonObject
+                                        getNestedObjectValue(props.valueRefLocale ?? {}, [key]) as JsonObject
                                     }
                                     valueTranslated={
-                                        getNestedObjectValue(props.valueTranslated || {}, [key]) as JsonObject
+                                        getNestedObjectValue(props.valueTranslated ?? {}, [key]) as JsonObject
                                     }
                                     depth={depth() + 1}
                                     absoluteKey={absoluteKey}
@@ -476,7 +489,7 @@ function NestedInputRow(props: NestedInputRowProps) {
                     </For>
                 </div>
             </Show>
-        </>
+        </Show>
     );
 }
 
@@ -514,12 +527,12 @@ function InputRow(props: InputRowProps) {
                 {props.key}
             </label>
 
-            <TextField value={props.valueRaw || ""} readOnly class="m-0" tabIndex={-1} />
+            <TextField value={props.valueRaw ?? ""} readOnly class="m-0" tabIndex={-1} />
 
             <TextField
                 id={`input-${props.absoluteKey.join(".")}`}
                 spellcheck={false}
-                value={props.valueTranslated || ""}
+                value={props.valueTranslated ?? ""}
                 onInput={UpdateTranslation}
                 // tabIndex={props.valueTranslated ? -1 : undefined}
             />
@@ -555,7 +568,7 @@ function updateObject<T extends JsonObject | JsonArray>(
     removeKeyOnFalsyVal = true,
 ): T {
     if (keys.length === 0) return srcObj;
-    const isValueAbsent = value === undefined || value === null || value === "";
+    const isValueAbsent = value === undefined || value === null;
 
     // clone root
     const root = Array.isArray(srcObj) ? [...srcObj] : { ...srcObj };
@@ -643,7 +656,7 @@ function assembleObjectWithOrderedKeys(obj: JsonObject, ref: JsonObject): JsonOb
     return result;
 }
 
-function getNestedObjectValue(obj: JsonObject | JsonArray, keys: ObjectKey[]) {
+function getNestedObjectValue<T extends JsonObject | JsonArray>(obj: T, keys: ObjectKey[]) {
     let result: Json = obj;
 
     for (const key of keys) {
@@ -652,7 +665,7 @@ function getNestedObjectValue(obj: JsonObject | JsonArray, keys: ObjectKey[]) {
         } else if (result && typeof result === "object") {
             result = getObjectItem(result, key);
         } else {
-            throw new Error(":)");
+            return null;
         }
     }
 
@@ -683,6 +696,48 @@ function ObjIsNonEmpty(obj: JsonObject | undefined) {
     } catch {
         return false;
     }
+}
+
+function hasEmptyValue<T extends Json>(obj: T, refObj: T) {
+    if (
+        !obj ||
+        !refObj ||
+        typeof obj !== "object" ||
+        typeof refObj !== "object" ||
+        Array.isArray(obj) ||
+        Array.isArray(refObj)
+    ) {
+        return true;
+    }
+
+    const objKeys = getObjectKeys(obj);
+    const refObjKeys = getObjectKeys(refObj);
+
+    if (objKeys.length < refObjKeys.length) return true;
+    const combinedKeys = new Set([...objKeys, ...refObjKeys]);
+
+    for (const key of combinedKeys) {
+        if (HIDDEN_KEYS.includes(key)) continue;
+
+        const item = obj[key];
+        if (item === undefined || item === null) {
+            return true;
+        }
+
+        const refEquiv = refObj[key];
+        if (
+            item &&
+            typeof item === "object" &&
+            !Array.isArray(item) &&
+            refEquiv &&
+            typeof refEquiv === "object" &&
+            !Array.isArray(refEquiv)
+        ) {
+            if (hasEmptyValue(item, refEquiv)) return true;
+        }
+    }
+
+    return false;
 }
 
 function getObjectKeys<T extends JsonObject | JsonArray>(obj: T): ObjectKey[] {
