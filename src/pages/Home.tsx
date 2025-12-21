@@ -8,7 +8,7 @@ import {
 import { TextField, TextFieldRoot } from "@components/ui/text-field";
 import { useSearchParams } from "@solidjs/router";
 import ChevronDownIcon from "lucide-solid/icons/chevron-down";
-import { createResource, createSignal, For, Show } from "solid-js";
+import { createEffect, createResource, createSignal, For, Show } from "solid-js";
 import { LoadSettings } from "@/components/layout/Settings";
 import { Button } from "@/components/ui/button";
 import { FullPageLoading } from "@/components/ui/loading";
@@ -187,6 +187,15 @@ function HomePage(props: HomePageProps) {
         URL.revokeObjectURL(url);
     }
 
+    createEffect(() => {
+        if (translationLocale_content() || selectedLocaleFile()) {
+            setHideNonEmptyEntries({
+                enabled: false,
+                translationSnapshot: {},
+            });
+        }
+    });
+
     return (
         <main class="w-full grid grid-cols-[min-content_1fr_1fr] gap-4">
             <div class="grid col-span-full grid-cols-subgrid mt-4">
@@ -322,7 +331,7 @@ function HomePage(props: HomePageProps) {
                             <SwitchControl>
                                 <SwitchThumb />
                             </SwitchControl>
-                            <SwitchLabel>Show empty entries only</SwitchLabel>
+                            <SwitchLabel>Hide translated entries</SwitchLabel>
                         </Switch>
                     </div>
 
