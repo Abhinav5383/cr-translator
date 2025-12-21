@@ -127,7 +127,7 @@ function HomePage(props: HomePageProps) {
         return getLocaleFileContents(repoPath(), `${langDir()}/${selectedRefLocale()}/${selectedLocaleFile()}`);
     });
 
-    const [translationLocale_content, { mutate: setTranslationContent }] = createResource(
+    const [translationLocale_content, { mutate: mutateTranslationContent }] = createResource(
         translationLocale_deps,
         () => {
             const emptyPromise: Promise<JsonObject> = new Promise((resolve) => resolve({}));
@@ -140,6 +140,10 @@ function HomePage(props: HomePageProps) {
             );
         },
     );
+
+    function setTranslationContent(newVal: JsonObject) {
+        mutateTranslationContent(assembleObjectWithOrderedKeys(newVal, refLocale_content() ?? {}));
+    }
 
     function handleTextareaChange(
         e: Event & {
@@ -574,4 +578,23 @@ function ObjIsNonEmpty(obj: JsonObject | undefined) {
 
 function stringifyJson(json: Json | undefined) {
     return JSON.stringify(json, null, 4).replaceAll("\\\\", "\\");
+}
+
+function assembleObjectWithOrderedKeys(obj: JsonObject, ref: JsonObject): JsonObject {
+    if (!ref) return obj;
+
+    const newObj: JsonObject = {};
+
+    for (const key of Object.keys(ref)) {
+        const keyValue = obj[key];
+        const refValue = ref[key];
+
+        if (typeof keyValue === "object" && typeof refValue === "object") {
+            newObj[key] = assembleObjectWithOrderedKeys(keyValue as JsonObject, refValue as JsonObject);
+        } else {
+            newObj[key] = keyValue;
+        }
+    }
+
+    return newObj;
 }
